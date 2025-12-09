@@ -1,0 +1,70 @@
+
+/* Tiêu đề chính index */
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #007bff;       /* xanh primary */
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    animation: fadeInDown 0.8s ease-in-out;
+}
+
+/* Icon răng */
+.tooth-icon {
+    color: #0d6efd;       /* màu đồng bộ bootstrap */
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* Đoạn văn */
+.hero-text {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 20px;
+    animation: fadeIn 1.2s ease-in-out;
+}
+/*RESPONSIVE*/
+@media (min-width: 992px) {
+        .hero-title {
+            font-size: 3.5rem; /* Chữ to hơn trên máy tính */
+        }
+        .hero-section {
+            padding-right: 3rem; /* Tạo khoảng cách với form bên phải */
+        }
+    }
+
+/* Hiệu ứng fade */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Hiệu ứng icon đập nhẹ */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.18);
+    }
+    100% {
+        transform: scale(1);
+    }
+}

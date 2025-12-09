@@ -1,10 +1,165 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-    {{name}}
-</body>
-</html>
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<div class="container py-5">
+    <div class="row align-items-center justify-content-center">
+        <div class="col-lg-7 mb-5 mb-lg-0 hero-section text-dark">
+            <h1 class="hero-title">
+                <i class="fa-solid fa-tooth tooth-icon"></i>
+                NHA KHOA QUỐC BẢO
+            </h1>
+
+            <p class="hero-text">
+                Chào mừng bạn đến với Nha Khoa Quốc Bảo. Chúng tôi cung cấp giải pháp chăm sóc răng miệng toàn diện với
+                trải nghiệm thuận tiện nhất. Chỉ với vài thao tác, bạn đã có thể <strong>đặt lịch khám nhanh
+                chóng</strong> với bác sĩ
+                yêu thích. Đội ngũ của chúng tôi luôn đảm bảo <strong>chẩn đoán chính xác</strong>, điều trị nhẹ nhàng
+                và kê đơn thuốc
+                đúng chuẩn, giúp bạn tìm lại nụ cười rạng rỡ với <strong>chi phí minh bạch</strong> nhất.
+            </p>
+
+            <div class="row g-4 mt-2">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-regular fa-calendar-check fa-2x feature-icon text-primary me-3"></i>
+                        <div>
+                            <h5 class="fw-bold">Nha Khoa Thẩm Mỹ</h5>
+                            <ul class="list-unstyled small text-muted mb-0">
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Bọc răng sứ & Veneer</li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Niềng răng thẩm mỹ</li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Tẩy trắng răng</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-wand-magic-sparkles fa-2x feature-icon text-primary me-3"></i>
+                        <div>
+                            <h5 class="fw-bold">Phục Hình & Phẫu Thuật</h5>
+                            <ul class="list-unstyled small text-muted mb-0">
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Cấy ghép Implant</li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Nhổ răng khôn</li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Tiểu phẫu nha chu</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-prescription-bottle-medical fa-2x feature-icon text-primary me-3"></i>
+                        <div>
+                            <h5 class="fw-bold">Điều Trị Tổng Quát</h5>
+                            <ul class="list-unstyled small text-muted mb-0">
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Hàn trám răng</li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Điều trị tủy</li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Cạo vôi răng</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-file-invoice-dollar fa-2x feature-icon text-primary me-3"></i>
+                        <div>
+                            <h5 class="fw-bold">Chăm Sóc Gia Đình</h5>
+                            <ul class="list-unstyled small text-muted mb-0">
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Nha khoa trẻ em</li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Chăm sóc thai phụ</li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i>Khám định kỳ</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="text-center mb-4">
+                <h3>Đăng nhập hệ thống</h3>
+                <p class="text-muted">Vui lòng đăng nhập để đặt lịch khám hoặc xem hồ sơ</p>
+            </div>
+            <div class="card card-auth p-4">
+                <ul class="nav nav-pills nav-fill mb-4" id="pills-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pills-login-tab" data-bs-toggle="pill"
+                                data-bs-target="#pills-login"
+                                type="button" role="tab">Đăng Nhập
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-register-tab" data-bs-toggle="pill"
+                                data-bs-target="#pills-register"
+                                type="button" role="tab">Đăng Ký
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="pills-tabContent">
+
+                    <div class="tab-pane fade show active" id="pills-login" role="tabpanel">
+                        <form onsubmit="handleLogin(event)">
+                            <div class="mb-3">
+                                <label for="loginUser" class="form-label">Tên đăng nhập / SĐT</label>
+                                <input type="text" class="form-control" id="loginUser" placeholder="Nhập tên đăng nhập"
+                                       required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="loginPass" class="form-label">Mật khẩu</label>
+                                <input type="password" class="form-control" id="loginPass" placeholder="********"
+                                       required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="loginRole" class="form-label">Vai trò đăng nhập</label>
+                                <select class="form-select" id="loginRole" required>
+                                    <option value="" selected disabled>Chọn vai trò...</option>
+                                    <option value="khachhang">Bệnh nhân (Đặt lịch)</option>
+                                    <option value="bacsi">Bác sĩ (Khám & Kê đơn)</option>
+                                    <option value="letan">Lễ tân (Thu ngân)</option>
+                                    <option value="quanly">Quản lý (Báo cáo)</option>
+                                </select>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">Đăng Nhập</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="pills-register" role="tabpanel">
+                        <form onsubmit="handleRegister(event)">
+                            <div class="mb-3">
+                                <label class="form-label">Họ và tên</label>
+                                <input type="text" class="form-control" placeholder="Nguyễn Văn A" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Số điện thoại</label>
+                                <input type="tel" class="form-control" placeholder="0909xxxxxx" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mật khẩu</label>
+                                <input type="password" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Xác nhận mật khẩu</label>
+                                <input type="password" class="form-control" required>
+                            </div>
+                            <div class="form-text mb-3">Tài khoản mới sẽ mặc định là Bệnh nhân. Vui lòng liên hệ Admin
+                                nếu là
+                                nhân viên.
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">Đăng Ký Mới</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

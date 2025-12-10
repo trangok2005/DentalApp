@@ -100,29 +100,34 @@
                 <div class="tab-content" id="pills-tabContent">
 
                     <div class="tab-pane fade show active" id="pills-login" role="tabpanel">
-                        <form onsubmit="handleLogin(event)">
+                        <form method="post">
                             <div class="mb-3">
                                 <label for="loginUser" class="form-label">Tên đăng nhập / SĐT</label>
-                                <input type="text" class="form-control" id="loginUser" placeholder="Nhập tên đăng nhập"
+                                <input type="text" class="form-control" id="loginUser" name="username"
+                                       placeholder="Nhập tên đăng nhập"
                                        required>
                             </div>
                             <div class="mb-3">
                                 <label for="loginPass" class="form-label">Mật khẩu</label>
-                                <input type="password" class="form-control" id="loginPass" placeholder="********"
+                                <input type="password" class="form-control" id="loginPass" name="password"
+                                       placeholder="********"
                                        required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="loginRole" class="form-label">Vai trò đăng nhập</label>
-                                <select class="form-select" id="loginRole" required>
+                                <label for="loginRole" class="form-label" >Vai trò đăng nhập</label>
+                                <select class="form-select" id="loginRole" name="role" required>
                                     <option value="" selected disabled>Chọn vai trò...</option>
-                                    <option value="khachhang">Bệnh nhân (Đặt lịch)</option>
-                                    <option value="bacsi">Bác sĩ (Khám & Kê đơn)</option>
-                                    <option value="letan">Lễ tân (Thu ngân)</option>
-                                    <option value="quanly">Quản lý (Báo cáo)</option>
+                                    <option value="BenhNhan">Bệnh nhân</option>
+                                    <option value="nhasi">Bác sĩ (Khám & Kê đơn)</option>
+                                    <option value="letan">Lễ tân </option>
+                                     <option value="thungan">Thu Ngân</option>
+                                    <option value="quanly">Quản lý </option>
                                 </select>
                             </div>
-
+                            {% if error %}
+                            <div class="alert alert-danger mt-2">{{ error }}</div>
+                            {% endif %}
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg">Đăng Nhập</button>
                             </div>
@@ -130,7 +135,7 @@
                     </div>
 
                     <div class="tab-pane fade" id="pills-register" role="tabpanel">
-                        <form onsubmit="handleRegister(event)">
+                        <form onsubmit="handleRegister(event)" method="post">
                             <div class="mb-3">
                                 <label class="form-label">Họ và tên</label>
                                 <input type="text" class="form-control" placeholder="Nguyễn Văn A" required>

@@ -1,17 +1,19 @@
 from DentalApp import app, db
-from models import NguoiDung, NhanVien, UserRole, BoPhanEnum
+from datetime import datetime
+
+from models import NguoiDung, NhanVien, UserRole, BoPhanEnum, NhaSi, DichVu, LichHen
 
 def auth_user(username, password, role_from_html):
     # 1. Tìm user theo user/pass
     user = NguoiDung.query.filter(
-        NguoiDung.TaiKhoan == username,
-        NguoiDung.MatKhau == password
+        NguoiDung.TaiKhoan.__eq__(username),
+        NguoiDung.MatKhau.__eq__(password)
     ).first()
 
     if not user:
         return None
 
-    if role_from_html == 'khachhang':
+    if role_from_html == 'BenhNhan':
         return user if user.VaiTro == UserRole.BenhNhan else None
 
     elif role_from_html == 'nhasi':
@@ -43,3 +45,38 @@ def auth_user(username, password, role_from_html):
             return None  # Đúng là nhân viên nhưng sai bộ phận (VD: Thu ngân đăng nhập vào Lễ tân)
 
     return None
+
+def get_user_by_id(user_id):
+    return NguoiDung.query.get(user_id)
+
+def load_dentist_list():
+    return NhaSi.query.all()
+
+def load_services_list():
+    return DichVu.query.all()
+
+def get_appointments_by_dentist_and_date(dentist_id, date):
+    try:
+        dentist_id = int(dentist_id)
+    except:
+        print("Dentist ID không hợp lệ:", dentist_id)
+        return []  # Tránh crash app
+
+        # chuyển ngày về kiểu date
+    from datetime import datetime
+    try:
+        date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+    except:
+        print("Ngày không hợp lệ:", date)
+        return []
+    return (
+        LichHen.query
+        .filter(LichHen.MaNhaSi == dentist_id, LichHen.NgayKham == date)
+        .all()
+    )
+
+if __name__=="__main__":
+    with app.app_context():
+        import hashlib
+        pas ='1'
+        print(hashlib.md5(pas.strip().encode('utf-8')).hexdigest())

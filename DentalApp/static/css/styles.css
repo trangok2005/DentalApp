@@ -72,3 +72,15 @@
         transform: scale(1);
     }
 }
+
+/*booking*/
+.header-logo { display: flex; align-items: center; gap: 10px; color: #28a745; font-weight: bold; font-size: 1.2rem; }
+.box-left { border: 1px solid #ccc; padding: 20px; border-radius: 5px; background: #fff; }
+.box-title { color: #007bff; text-align: center; font-weight: bold; margin-bottom: 20px; }
+time-input { color: orange; font-weight: bold; text-align: center; }
+
+        /* Table Styling */
+.slot-table th { background-color: #5b9bd5; color: white; text-align: center; }
+.slot-table td { text-align: center; vertical-align: middle; cursor: pointer; }
+.slot-row-selected { background-color: #5cb85c !important; color: white; } /* Màu xanh lá khi chọn */
+.slot-booked { background-color: #f0f0f0; color: #999; cursor: not-allowed; pointer-events: none; }

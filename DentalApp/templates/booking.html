@@ -1,5 +1,90 @@
 {%extends 'layout/base.html'%}
-
 {%block content%}
-hello
+<div class="row">
+    <div class="col-md-5">
+        <div class="box-left">
+            <h5 class="box-title">Thông tin đặt khám</h5>
+
+            <form id="bookingForm">
+                <div class="mb-3">
+                    <label class="form-label">Chọn Nha Sĩ</label>
+                    <select class="form-select" id="dentistSelect">
+                        <option value="" selected disabled>-- Chọn Nha Sĩ --</option>
+                        {{ dentists }}
+                        {% for d in dentists %}
+                        <option value="{{ d.MaNguoiDung }}">{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <input type="date" class="form-control" id="dateInput" value="{{ today }}">
+                </div>
+
+                <div class="mb-3 row align-items-center">
+                    <label class="col-sm-3 col-form-label">Chọn Giờ:</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control time-input" id="selectedTime" readonly
+                               placeholder="Chọn từ danh sách">
+                    </div>
+                </div>
+
+                <div class="mb-3 row align-items-center">
+                    <label class="col-sm-3 col-form-label">Họ Tên</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="patientName" placeholder="Nhập họ tên">
+                    </div>
+                </div>
+
+                <div class="mb-3 row align-items-center">
+                    <label class="col-sm-3 col-form-label">SĐT</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="patientPhone" placeholder="09xxxxxxx">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="ghiChu" class="form-label">Ghi Chú / Triệu chứng</label>
+                    <textarea class="form-control" id="ghiChu" name="ghi_chu" rows="3"
+                              placeholder="Ví dụ: Đau răng hàm dưới, muốn cạo vôi..."></textarea>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-6 pe-2">
+                        <button type="button" class="btn btn-outline-primary w-100" id="btnConfirm">Xác Nhận</button>
+                    </div>
+                    <div class="col-6 ps-2">
+                        <button type="button" class="btn btn-outline-danger w-100" id="btnCancel">Hủy</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <h5 style="padding:0.7rem" class="text-center text-primary mb-3"><i class="bi bi-calendar-check"></i> CHỌN GIỜ
+            KHÁM</h5>
+
+        <div class="text-center mb-3">
+            Khung giờ trống ngày: <span id="displayDate" class="fw-bold"></span><br>
+            Trạng thái: <span id="statusText">...</span>
+        </div>
+
+        <table class="table table-bordered slot-table">
+            <thead>
+            <tr>
+                <th style="width: 15%;">STT</th>
+                <th style="width: 40%;">Thời Gian</th>
+                <th style="width: 45%;">Trạng Thái</th>
+            </tr>
+            </thead>
+            <tbody id="slotsTableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
 {%endblock%}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/booking.js') }}"></script>
+{% endblock %}

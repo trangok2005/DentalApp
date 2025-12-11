@@ -1,0 +1,62 @@
+[
+  {
+    "TenDV": "Khám răng tổng quát",
+    "DonGia": 50000,
+    "MoTa": "Khám và tư vấn sức khỏe răng miệng."
+  },
+  {
+    "TenDV": "Lấy cao răng (Scaling)",
+    "DonGia": 150000,
+    "MoTa": "Lấy cao răng siêu âm và đánh bóng."
+  },
+  {
+    "TenDV": "Trám răng thẩm mỹ Composite",
+    "DonGia": 300000,
+    "MoTa": "Phục hồi răng sâu hoặc mẻ bằng vật liệu Composite."
+  },
+  {
+    "TenDV": "Điều trị tủy răng",
+    "DonGia": 800000,
+    "MoTa": "Làm sạch ống tủy và trám kín ống tủy."
+  },
+  {
+    "TenDV": "Nhổ răng thường",
+    "DonGia": 150000,
+    "MoTa": "Nhổ răng mọc đúng vị trí, không biến chứng."
+  },
+  {
+    "TenDV": "Nhổ răng khôn mọc lệch",
+    "DonGia": 1200000,
+    "MoTa": "Tiểu phẫu răng khôn mọc lệch hoặc ngầm."
+  },
+  {
+    "TenDV": "Tẩy trắng răng",
+    "DonGia": 1200000,
+    "MoTa": "Tẩy trắng công nghệ Laser Whitening."
+  },
+  {
+    "TenDV": "Niềng răng mắc cài kim loại",
+    "DonGia": 25000000,
+    "MoTa": "Niềng răng chỉnh nha bằng mắc cài kim loại tiêu chuẩn."
+  },
+  {
+    "TenDV": "Niềng răng Invisalign",
+    "DonGia": 45000000,
+    "MoTa": "Chỉnh nha bằng khay trong suốt Invisalign."
+  },
+  {
+    "TenDV": "Cấy ghép Implant",
+    "DonGia": 18000000,
+    "MoTa": "Thay thế răng đã mất bằng trụ Implant Titan."
+  },
+  {
+    "TenDV": "Bọc răng sứ Zirconia",
+    "DonGia": 3500000,
+    "MoTa": "Phục hình răng bằng sứ Zirconia thẩm mỹ cao."
+  },
+  {
+    "TenDV": "Dán sứ Veneer",
+    "DonGia": 7000000,
+    "MoTa": "Dán sứ thẩm mỹ cho răng cửa."
+  }
+]

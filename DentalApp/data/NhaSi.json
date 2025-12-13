@@ -1,35 +1,36 @@
 [
   {
+    "HoTen": "Dr. Trần Minh Đức",
+    "TaiKhoan": "drduc",
+    "MatKhau": "123",
+    "ChuyenMon": "Chỉnh nha, Niềng răng Invisalign"
+  },
+  {
     "HoTen": "ThS.BS Nguyễn Thanh Tùng",
-    "SDT": "0909111222",
     "TaiKhoan": "dr_tung",
     "MatKhau": "123",
     "ChuyenMon": "Phục hình răng sứ, Dán sứ Veneer"
   },
   {
     "HoTen": "BS.CKI Trần Thị Mai",
-    "SDT": "0909333444",
     "TaiKhoan": "dr_mai",
     "MatKhau": "123",
     "ChuyenMon": "Chỉnh nha (Niềng răng), Invisalign"
   },
   {
     "HoTen": "TS.BS Lê Văn Hùng",
-    "SDT": "0909555666",
     "TaiKhoan": "dr_hung",
     "MatKhau": "123",
     "ChuyenMon": "Phẫu thuật hàm mặt, Cấy ghép Implant"
   },
   {
     "HoTen": "BS Phạm Thu Hà",
-    "SDT": "0909777888",
     "TaiKhoan": "dr_ha",
     "MatKhau": "123",
     "ChuyenMon": "Điều trị tủy, Nha chu"
   },
   {
     "HoTen": "BS Hoàng Văn Nam",
-    "SDT": "0909999000",
     "TaiKhoan": "dr_nam",
     "MatKhau": "123",
     "ChuyenMon": "Nha khoa trẻ em, Nhổ răng tiểu phẫu"

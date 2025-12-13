@@ -25,27 +25,36 @@
                     <label class="col-sm-3 col-form-label">Chọn Giờ:</label>
                     <div class="col-sm-9">
                         <input type="text" class="form-control time-input" id="selectedTime" readonly
-                               placeholder="Chọn từ danh sách">
+                               placeholder="Chọn từ danh sách"
+                               name= "time"
+                        >
+
                     </div>
                 </div>
 
                 <div class="mb-3 row align-items-center">
                     <label class="col-sm-3 col-form-label">Họ Tên</label>
                     <div class="col-sm-9">
-                        <input type="text" class="form-control" id="patientName" placeholder="Nhập họ tên">
+                        <input type="text" class="form-control" id="patientName" placeholder="Nhập họ tên"
+                               value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.HoTen }}{% endif %}"
+                               name = "name"
+                        >
                     </div>
                 </div>
 
                 <div class="mb-3 row align-items-center">
                     <label class="col-sm-3 col-form-label">SĐT</label>
                     <div class="col-sm-9">
-                        <input type="text" class="form-control" id="patientPhone" placeholder="09xxxxxxx">
+                        <input type="text" class="form-control" id="patientPhone" placeholder="09xxxxxxx"
+                               value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.SDT }}{% endif %}"
+                               {% if current_user.VaiTro.value == 'Patient' %}readonly{% endif %}
+                        >
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="ghiChu" class="form-label">Ghi Chú / Triệu chứng</label>
-                    <textarea class="form-control" id="ghiChu" name="ghi_chu" rows="3"
+                    <label for="patientNote" class="form-label">Ghi Chú / Triệu chứng</label>
+                    <textarea class="form-control" id="patientNote" name="patientNote" rows="3"
                               placeholder="Ví dụ: Đau răng hàm dưới, muốn cạo vôi..."></textarea>
                 </div>
 

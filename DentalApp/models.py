@@ -8,15 +8,15 @@ import json
 
 
 class UserRole(enum.Enum):
-    NhaSi = "Nha Sĩ"
-    BenhNhan = "Bệnh Nhân"
-    NhanVien = "Nhân Viên"
+    NhaSi = "Dentist"
+    BenhNhan = "Patient"
+    NhanVien = "Staff"
 
 
 class BoPhanEnum(enum.Enum):
-    LeTan = "Lễ Tân"
-    ThuNgan = "Thu Ngân"
-    QuanLy = "Quan Lý"
+    LeTan = "Reception"
+    ThuNgan = "Cashier"
+    QuanLy = "Manager"
 
 
 # --- Bảng Người Dùng (Base) ---
@@ -25,10 +25,9 @@ class NguoiDung(db.Model, UserMixin):
 
     MaNguoiDung = Column(Integer, primary_key=True, autoincrement=True)
     HoTen = Column(String(100), nullable=False)
-    SDT = Column(String(15), unique=True, nullable=False)  # SDT nên là duy nhất
     TaiKhoan = Column(String(50), unique=True, nullable=False)
     MatKhau = Column(String(255), nullable=False)
-    VaiTro = Column(Enum(UserRole), nullable=False)
+    VaiTro = Column(Enum(UserRole), nullable=False, default=UserRole.BenhNhan)
 
     # Thiết lập đa hình (Polymorphism) để SQLAlchemy tự nhận diện loại class
     __mapper_args__ = {
@@ -46,7 +45,8 @@ class NguoiDung(db.Model, UserMixin):
 class BenhNhan(NguoiDung):
     __tablename__ = 'benhnhan'
     MaNguoiDung = Column(Integer, ForeignKey('nguoidung.MaNguoiDung'), primary_key=True)
-    NgaySinh = Column(Date, nullable=False)
+    SDT = Column(String(15), unique=True, nullable=False)
+    NgaySinh = Column(Date)
     DiaChi = Column(Text)
     TienSuBenh = Column(Text)
 
@@ -83,23 +83,17 @@ class NhanVien(NguoiDung):
         'polymorphic_identity': UserRole.NhanVien,
     }
 
-class PhieuDieuTriDichVu(db.Model):
-    __tablename__ = 'phieudieutri_dichvu'
-    MaPDT = Column(Integer, ForeignKey('phieudieutri.MaPDT'), primary_key=True)
-    MaDV = Column(Integer, ForeignKey('dichvu.MaDV'), primary_key=True)
+# --- Lịch Hẹn ---
+class LichHen(db.Model):
+    __tablename__ = 'lichhen'
+    MaLH = Column(Integer, primary_key=True, autoincrement=True)
+    NgayKham = Column(Date, nullable=False)
+    GioKham = Column(Time, nullable=False)  # Dùng kiểu Time thay vì Integer
+    TrangThai = Column(String(50), default="ChoKham")  # Mặc định trạng thái
+    GhiChu = Column(Text)
 
-
-class DichVu(db.Model):
-    __tablename__ = 'dichvu'
-    MaDV = Column(Integer, primary_key=True, autoincrement=True)
-    TenDV = Column(String(500), nullable=False)
-    # Dùng Numeric cho tiền tệ để tránh sai số Float
-    DonGia = Column(Numeric(10, 0), nullable=False)
-    MoTa = Column(Text)
-
-    def __str__(self):
-        return self.TenDV
-
+    MaNhaSi = Column(Integer, ForeignKey('nhasi.MaNguoiDung'))
+    MaBenhNhan = Column(Integer, ForeignKey('benhnhan.MaNguoiDung'))
 
 class PhieuDieuTri(db.Model):
     __tablename__ = 'phieudieutri'
@@ -118,21 +112,22 @@ class PhieuDieuTri(db.Model):
     donthuoc = relationship("DonThuoc", backref="phieudieutri", uselist=False, lazy=True)
     hoadon = relationship("HoaDon", backref="phieudieutri", uselist=False, lazy=True)
 
+class DichVu(db.Model):
+    __tablename__ = 'dichvu'
+    MaDV = Column(Integer, primary_key=True, autoincrement=True)
+    TenDV = Column(String(500), nullable=False)
+    # Dùng Numeric cho tiền tệ để tránh sai số Float
+    DonGia = Column(Numeric(10, 0), nullable=False)
+    MoTa = Column(Text)
 
-# --- Lịch Hẹn ---
-class LichHen(db.Model):
-    __tablename__ = 'lichhen'
-    MaLH = Column(Integer, primary_key=True, autoincrement=True)
-    NgayKham = Column(Date, nullable=False)
-    GioKham = Column(Time, nullable=False)  # Dùng kiểu Time thay vì Integer
-    TrangThai = Column(String(50), default="ChoKham")  # Mặc định trạng thái
-    GhiChu = Column(Text)
+    def __str__(self):
+        return self.TenDV
 
-    MaNhaSi = Column(Integer, ForeignKey('nhasi.MaNguoiDung'))
-    MaBenhNhan = Column(Integer, ForeignKey('benhnhan.MaNguoiDung'))
+class PhieuDieuTriDichVu(db.Model):
+    __tablename__ = 'phieudieutri_dichvu'
+    MaPDT = Column(Integer, ForeignKey('phieudieutri.MaPDT'), primary_key=True)
+    MaDV = Column(Integer, ForeignKey('dichvu.MaDV'), primary_key=True)
 
-
-# --- Thuốc & Đơn Thuốc ---
 class Thuoc(db.Model):
     __tablename__ = 'thuoc'
     MaThuoc = Column(Integer, primary_key=True, autoincrement=True)
@@ -186,34 +181,27 @@ class HoaDon(db.Model):
 
 if __name__ == "__main__":
     with app.app_context():
-
-        # db.create_all()
-        # bn1 =BenhNhan(
-        #     HoTen="Nguyễn Văn A",
-        #     SDT="0909123456",
-        #     TaiKhoan="tvt",
-        #     MatKhau="123",  # Thực tế cần hash password
-        #     NgaySinh=date(1990, 5, 15),
-        #     DiaChi="123 Lê Lợi, Q1, TP.HCM",
-        #     TienSuBenh="Dị ứng thuốc tê nhẹ"
-        # )
-        # lt1 = NhanVien(
-        #     HoTen="Lê Thị Hạnh",
-        #     SDT="0912333444",
-        #     TaiKhoan="letan01",
-        #     MatKhau="123",
-        #     BoPhan=BoPhanEnum.LeTan  # Quan trọng: Định danh bộ phận
-        # )
-        #
-        # ns1 = NhaSi(
-        #     HoTen="Dr. Trần Minh Đức",
-        #     SDT="0909888999",
-        #     TaiKhoan="drduc",
-        #     MatKhau="123",  # Hash password nếu cần
-        #     ChuyenMon="Chỉnh nha, Niềng răng Invisalign"
-        # )
-        # db.session.add_all([bn1,ns1,lt1])
-        # db.session.commit()
+#
+#         db.create_all()
+#         bn1 =BenhNhan(
+#             HoTen="Nguyễn Văn A",
+#             SDT="0909123456",
+#             TaiKhoan="tvt",
+#             MatKhau="123",  # Thực tế cần hash password
+#             NgaySinh=date(1990, 5, 15),
+#             DiaChi="123 Lê Lợi, Q1, TP.HCM",
+#             TienSuBenh="Dị ứng thuốc tê nhẹ"
+#         )
+#         lt1 = NhanVien(
+#             HoTen="Lê Thị Hạnh",
+#             TaiKhoan="letan01",
+#             MatKhau="123",
+#             BoPhan=BoPhanEnum.LeTan  # Quan trọng: Định danh bộ phận
+#         )
+#
+#
+#         db.session.add_all([bn1,lt1])
+#         db.session.commit()
 
         # with open("data/NhaSi.json", encoding="utf-8") as f:
         #     dentists = json.load(f)
@@ -223,21 +211,24 @@ if __name__ == "__main__":
         #         db.session.add(den)
         #
         # db.session.commit()
-
-        # with open("data/DichVu.json", encoding="utf-8") as f:
-        #     services = json.load(f)
         #
-        #     for s in services:
-        #         ser = DichVu(**s)
-        #         db.session.add(ser)
+        #
+        # with open("data/LichKham.json", encoding="utf-8") as f:
+        #     appointments = json.load(f)
+        #
+        #     for item in appointments:
+        #         appt = LichHen(**item)
+        #         db.session.add(appt)
         #
         # db.session.commit()
 
-        with open("data/LichKham.json", encoding="utf-8") as f:
-            appointments = json.load(f)
+        with open("data/DichVu.json", encoding="utf-8") as f:
+            services = json.load(f)
 
-            for item in appointments:
-                appt = LichHen(**item)
-                db.session.add(appt)
+            for s in services:
+                ser = DichVu(**s)
+                db.session.add(ser)
 
         db.session.commit()
+
+

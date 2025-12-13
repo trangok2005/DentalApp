@@ -1,0 +1,235 @@
+{%extends 'layout/base.html'%}
+
+{% block content %}
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="queue-box">
+                <div class="queue-header">Hàng chờ</div>
+                <div id="patientQueueList">
+                    {% for p in patients %}
+                    {% if p.status != 'Đã khám' %}
+                    <div class="queue-item {% if p.status == 'Đang khám' %}active{% endif %}"
+                         onclick="selectPatient({{ p.id }}, this)">
+                        {{ loop.index }}. {{ p.name }}
+                        {% if p.status == 'Đang khám' %} [Đang khám] {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9 border p-0">
+            <div class="info-header" id="patientInfoBanner">
+                THÔNG TIN: <span id="lblPatientName">...</span>
+                (<span id="lblPatientAge">...</span>t) |
+                Tiền sử: <span id="lblHistory">...</span>
+                <i class="bi bi-exclamation-triangle-fill text-warning" id="iconWarning" style="display:none;"></i>
+            </div>
+
+            <div class="p-3">
+                <div class="section-title">A. CHẨN ĐOÁN</div>
+                <textarea class="form-control" id="txtDiagnosis" rows="3"
+                          placeholder="Nhập chẩn đoán lâm sàng..."></textarea>
+
+                <div class="section-title">B. CHỈ ĐỊNH DỊCH VỤ</div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div style="width: 50%;">
+                        <select class="form-select border-danger text-danger" id="cboServices" onchange="addService()">
+                            <option value="" selected disabled>Chọn dịch vụ</option>
+                            {% for s in services %}
+                            <option value="{{ s.id }}" data-price="{{ s.price }}" data-name="{{ s.name }}"
+                                    data-desc="{{ s.desc }}">
+                                {{ s.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="price-total">
+                        TỔNG CỘNG: <span id="lblTotal">0</span> VND
+                    </div>
+                </div>
+
+                <table class="table table-bordered table-custom">
+                    <thead>
+                    <tr>
+                        <th style="width: 5%;">STT</th>
+                        <th style="width: 35%;">Tên Dịch vụ</th>
+                        <th style="width: 20%;">Chi phí</th>
+                        <th style="width: 35%;">Mô tả/Ghi chú</th>
+                        <th style="width: 5%;">#</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tblServiceBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between p-3 mt-3 border-top">
+                <button class="btn btn-prescribe" onclick="openPrescription()">KÊ ĐƠN THUỐC</button>
+
+                <button class="btn btn-save" onclick="saveExamination()">LƯU PHIẾU ĐIỀU TRỊ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPatientId = null;
+    let currentTotal = 0;
+    let selectedServiceIds = []; // Mảng chứa các ID dịch vụ đã chọn
+
+    // Format tiền tệ (VD: 100000 -> 100.000)
+    function formatCurrency(n) {
+        return new Intl.NumberFormat('vi-VN').format(n);
+    }
+
+    // STT 2: Xem thông tin bệnh nhân
+    async function selectPatient(pid, element) {
+        // Highlight UI
+        document.querySelectorAll('.queue-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        // Gọi API lấy thông tin
+        try {
+            const res = await fetch(`/api/patient/${pid}`);
+            const data = await res.json();
+
+            if (data.error) { alert('Không tìm thấy bệnh nhân'); return; }
+
+            // Binding dữ liệu lên UI
+            currentPatientId = data.id;
+            document.getElementById('lblPatientName').innerText = data.name;
+            document.getElementById('lblPatientAge').innerText = data.age;
+            document.getElementById('lblHistory').innerText = data.history;
+
+            // Hiển thị cảnh báo nếu có tiền sử bệnh
+            const warnIcon = document.getElementById('iconWarning');
+            if (data.history && data.history !== "Không có") {
+                warnIcon.style.display = 'inline-block';
+            } else {
+                warnIcon.style.display = 'none';
+            }
+
+            // Reset form cho bệnh nhân mới
+            resetFormPartially();
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // STT 4: Thêm dịch vụ & Tính tiền
+    function addService() {
+        const cbo = document.getElementById('cboServices');
+        const selectedOption = cbo.options[cbo.selectedIndex];
+
+        if (cbo.value === "") return;
+
+        const sId = cbo.value;
+        const sName = selectedOption.getAttribute('data-name');
+        const sPrice = parseInt(selectedOption.getAttribute('data-price'));
+        const sDesc = selectedOption.getAttribute('data-desc');
+
+        // Thêm dòng mới vào bảng
+        const tbody = document.getElementById('tblServiceBody');
+        const rowCount = tbody.rows.length + 1;
+
+        const tr = document.createElement('tr');
+        tr.id = `row-service-${rowCount}`; // ID để dễ xóa
+        tr.innerHTML = `
+            <td class="text-center">${rowCount}</td>
+            <td>${sName}</td>
+            <td class="text-center">${formatCurrency(sPrice)}</td>
+            <td>${sDesc}</td>
+            <td class="text-center">
+                <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="removeService(this, ${sPrice})"></i>
+            </td>
+        `;
+        tbody.appendChild(tr);
+
+        // Tính tổng tiền
+        currentTotal += sPrice;
+        updateTotalLabel();
+
+        // Reset dropdown về default
+        cbo.selectedIndex = 0;
+    }
+
+    // STT 5: Xóa dịch vụ
+    function removeService(btn, price) {
+        // Xóa dòng tr
+        const row = btn.parentNode.parentNode;
+        row.parentNode.removeChild(row);
+
+        // Trừ tiền
+        currentTotal -= price;
+        updateTotalLabel();
+
+        // (Optional) Đánh lại số thứ tự STT nếu cần thiết
+    }
+
+    function updateTotalLabel() {
+        document.getElementById('lblTotal').innerText = formatCurrency(currentTotal);
+    }
+
+    function resetFormPartially() {
+        document.getElementById('txtDiagnosis').value = "";
+        document.getElementById('tblServiceBody').innerHTML = "";
+        currentTotal = 0;
+        updateTotalLabel();
+    }
+
+    // STT 6: Mở trang kê đơn (Mockup)
+    function openPrescription() {
+        if (!currentPatientId) {
+            alert("Vui lòng chọn bệnh nhân trước!");
+            return;
+        }
+        alert(`Đang mở form kê đơn thuốc cho ID: ${currentPatientId}`);
+        // window.open('/ke-don-thuoc?pid=' + currentPatientId, '_blank');
+    }
+
+    // STT 7: Lưu phiếu & Làm mới
+    async function saveExamination() {
+        if (!currentPatientId) {
+            alert("Chưa chọn bệnh nhân!");
+            return;
+        }
+
+        const diagnosis = document.getElementById('txtDiagnosis').value;
+        // Lấy danh sách dịch vụ từ bảng (để chính xác những gì đang hiển thị)
+        // Trong thực tế, có thể duy trì 1 mảng object services
+
+        const payload = {
+            patient_id: currentPatientId,
+            diagnosis: diagnosis,
+            total_amount: currentTotal,
+            // services: ... (List các dịch vụ đã chọn)
+        };
+
+        try {
+            const res = await fetch('/api/save-examination', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                alert(result.message);
+                // Reload trang để cập nhật lại Hàng chờ (Bệnh nhân đã khám sẽ mất đi hoặc đổi trạng thái)
+                location.reload();
+            } else {
+                alert("Lỗi: " + result.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Lỗi kết nối server");
+        }
+    }
+</script>
+{% endblock %}

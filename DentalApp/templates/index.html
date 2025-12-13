@@ -84,23 +84,26 @@
             <div class="card card-auth p-4">
                 <ul class="nav nav-pills nav-fill mb-4" id="pills-tab" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="pills-login-tab" data-bs-toggle="pill"
-                                data-bs-target="#pills-login"
-                                type="button" role="tab">Đăng Nhập
+                        <button class="nav-link {% if active_tab != 'register' %}active{% endif %}"
+                                data-bs-toggle="pill"
+                                data-bs-target="#pills-login">
+                            Đăng Nhập
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="pills-register-tab" data-bs-toggle="pill"
-                                data-bs-target="#pills-register"
-                                type="button" role="tab">Đăng Ký
+                        <button class="nav-link {% if active_tab == 'register' %}active{% endif %}"
+                                data-bs-toggle="pill"
+                                data-bs-target="#pills-register">
+                            Đăng Ký
                         </button>
                     </li>
                 </ul>
 
                 <div class="tab-content" id="pills-tabContent">
 
-                    <div class="tab-pane fade show active" id="pills-login" role="tabpanel">
-                        <form method="post">
+                    <div class="tab-pane fade {% if active_tab != 'register' %}show active{% endif %}"
+                         id="pills-login" role="tabpanel">
+                        <form method="post" action="/login">
                             <div class="mb-3">
                                 <label for="loginUser" class="form-label">Tên đăng nhập / SĐT</label>
                                 <input type="text" class="form-control" id="loginUser" name="username"
@@ -115,18 +118,21 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="loginRole" class="form-label" >Vai trò đăng nhập</label>
+                                <label for="loginRole" class="form-label">Vai trò đăng nhập</label>
                                 <select class="form-select" id="loginRole" name="role" required>
                                     <option value="" selected disabled>Chọn vai trò...</option>
                                     <option value="BenhNhan">Bệnh nhân</option>
                                     <option value="nhasi">Bác sĩ (Khám & Kê đơn)</option>
-                                    <option value="letan">Lễ tân </option>
-                                     <option value="thungan">Thu Ngân</option>
-                                    <option value="quanly">Quản lý </option>
+                                    <option value="letan">Lễ tân</option>
+                                    <option value="thungan">Thu Ngân</option>
+                                    <option value="quanly">Quản lý</option>
                                 </select>
                             </div>
                             {% if error %}
                             <div class="alert alert-danger mt-2">{{ error }}</div>
+                            {% endif %}
+                            {% if success %}
+                            <div class="alert alert-success">{{ success }}</div>
                             {% endif %}
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg">Đăng Nhập</button>
@@ -134,29 +140,36 @@
                         </form>
                     </div>
 
-                    <div class="tab-pane fade" id="pills-register" role="tabpanel">
-                        <form onsubmit="handleRegister(event)" method="post">
+                    <div class="tab-pane fade {% if active_tab == 'register' %}show active{% endif %}"
+                         id="pills-register" role="tabpanel">
+                        <form onsubmit="handleRegister(event)" method="post" action="/register">
                             <div class="mb-3">
                                 <label class="form-label">Họ và tên</label>
-                                <input type="text" class="form-control" placeholder="Nguyễn Văn A" required>
+                                <input type="text" class="form-control" placeholder="Nguyễn Văn A" name="name" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Số điện thoại</label>
-                                <input type="tel" class="form-control" placeholder="0909xxxxxx" required>
+                                <input type="tel" class="form-control" placeholder="0909xxxxxx" name="phone" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Tên tài khoản</label>
+                                <input type="text" class="form-control" placeholder="tvt01" name="username" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Mật khẩu</label>
-                                <input type="password" class="form-control" required>
+                                <input type="password" class="form-control" name="password" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Xác nhận mật khẩu</label>
-                                <input type="password" class="form-control" required>
+                                <input type="password" class="form-control" name="confirm" required>
                             </div>
                             <div class="form-text mb-3">Tài khoản mới sẽ mặc định là Bệnh nhân. Vui lòng liên hệ Admin
                                 nếu là
                                 nhân viên.
                             </div>
-
+                            {% if register_error %}
+                            <div class="alert alert-danger">{{ register_error }}</div>
+                            {% endif %}
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-success btn-lg">Đăng Ký Mới</button>
                             </div>

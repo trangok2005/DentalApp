@@ -6,7 +6,7 @@
     const statusText = document.getElementById('statusText');
     const selectedTimeInput = document.getElementById('selectedTime');
 
-    // Hàm load danh sách giờ (STT 2, 3, 4, 5)
+    // Hàm load danh sách giờ
     async function loadSlots() {
         const dentist = dentistSelect.value;
         const date = dateInput.value;
@@ -75,30 +75,29 @@
         const time = selectedTimeInput.value;
         const name = document.getElementById('patientName').value;
         const phone = document.getElementById('patientPhone').value;
-        const note = document.getElementById('ghiChu').value;
+        const note = document.getElementById('patientNote').value;
 
-        if (!time || !name || !phone || !service) {
+        if (!time || !name || !phone || !note) {
             alert('Vui lòng điền đầy đủ thông tin và chọn giờ khám!');
             return;
         }
-
-        const payload = {
-            dentist: dentistSelect.value,
-            date: dateInput.value,
-            time: time,
-            name: name,
-            phone: phone,
-            service: service
-        };
-
+        //gui
         const res = await fetch('/api/book', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                dentist: dentistSelect.value,
+                date: dateInput.value,
+                time: time,
+                name: name,
+                phone: phone,
+                note: note
+            })
         });
-
+        //nhan
         const result = await res.json();
         alert(result.message);
+
         if (result.success) {
             loadSlots(); // Reload lại bảng
             document.getElementById('bookingForm').reset();//  reset form nhập liệu
@@ -114,5 +113,3 @@
         loadSlots();
     });
 
-    // Load lần đầu khi chạy trang (STT 1)
-    loadSlots();

@@ -118,3 +118,73 @@ time-input { color: orange; font-weight: bold; text-align: center; }
 #prescriptionModal .modal-title {
   font-weight: 600;
 }
+
+//hàng chờ
+
+.queue-box {
+    background-color: #f8f9fa; /* nền nhạt, nhẹ mắt */
+    border-radius: 10px;
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.queue-header {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.25rem;
+}
+
+
+
+.queue-item {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.25rem;
+    background-color: #ffffff; /* mặc định */
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    border: 1px solid #e9ecef;
+    cursor: pointer;
+}
+
+.queue-item:hover {
+    background-color: #e2e6ea;
+}
+
+.queue-item.active {
+    background-color: #d1e7dd; /* đang khám màu xanh nhạt */
+    border-color: #badbcc;
+    font-weight: 600;
+}
+
+.queue-item.text-danger {
+    color: #dc3545; /* muộn giờ */
+    background-color: #f8d7da; /* nhạt, không chói */
+    border-color: #f5c2c7;
+}
+
+.status {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: #6c757d;
+}
+
+.queue-disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.queue-item.disabled {
+    pointer-events: none;
+}

@@ -1,4 +1,4 @@
-#index
+# index
 from datetime import datetime, time
 from flask import render_template, request, redirect, jsonify
 from DentalApp import app, STANDARD_SLOTS, login, db
@@ -6,7 +6,8 @@ import dao
 from models import UserRole, BoPhanEnum
 from flask_login import login_user, logout_user, login_required, current_user
 
-@app.route('/login', methods = ['get', 'post'])
+
+@app.route('/login', methods=['get', 'post'])
 def login_index():
     err_msg = None
 
@@ -15,13 +16,17 @@ def login_index():
         password = request.form.get("password")
         role = request.form.get("role")
 
+        import hashlib
+        password = hashlib.md5(password.encode()).hexdigest()
+        print(username, password)
         # Ktra
         user = dao.auth_user(username, password, role)
 
         # Điều hướng theo vai trò
         if user:
             login_user(user)
-            if user.VaiTro == UserRole.BenhNhan or (user.VaiTro == UserRole.NhanVien and user.BoPhan == BoPhanEnum.LeTan) :
+            if user.VaiTro == UserRole.BenhNhan or (
+                    user.VaiTro == UserRole.NhanVien and user.BoPhan == BoPhanEnum.LeTan):
                 return redirect("/booking")
 
             elif user.VaiTro == UserRole.NhaSi:
@@ -42,10 +47,11 @@ def login_index():
         err_msg = "Sai thông tin đăng nhập hoặc vai trò không đúng!"
     return render_template("index.html", error=err_msg)
 
+
 @app.route('/register', methods=['get', 'post'])
 def register_index():
     register_error = None
-    active_tab = 'register'   # mặc định ở tab register
+    active_tab = 'register'  # mặc định ở tab register
 
     if request.method == "POST":
         password = request.form.get("password")
@@ -79,6 +85,7 @@ def register_index():
         active_tab=active_tab
     )
 
+
 @app.route("/", methods=["get", "post"])
 def index():
     # thoat user
@@ -86,14 +93,17 @@ def index():
         return redirect("/logout")
     return render_template("index.html", active_tab='login')
 
+
 @login.user_loader
 def get_user(user_id):
     return dao.get_user_by_id(user_id=user_id)
+
 
 @app.route("/logout")
 def logout_my_user():
     logout_user()
     return redirect("/")
+
 
 @app.route("/booking")
 @login_required
@@ -108,8 +118,8 @@ def booking():
 def get_slots():
     # Nhận dữ liệu từ Client
     data = request.json
-    selected_dentist =data.get('dentist')
-    selected_date =data.get('date')
+    selected_dentist = data.get('dentist')
+    selected_date = data.get('date')
     # import pdb; pdb.set_trace()
 
     # Lấy danh sách lịch hẹn của nha sĩ theo ngày
@@ -118,7 +128,6 @@ def get_slots():
     # Lấy danh sách giờ đã đặt
     booked_slots = [appt.GioKham.strftime("%H:%M") for appt in booked]
     print(booked_slots)
-
 
     total_booked = len(booked_slots)
 
@@ -152,7 +161,7 @@ def get_slots():
 
 @app.route('/api/book', methods=['POST'])
 def book_appointment():
-    # STT 8: Btn_XacNhan_Click - Lưu vào Database
+    # Btn_XacNhan_Click - Lưu vào Database
     data = request.json
     new_appointment = {
         'dentist_id': data.get('dentist'),
@@ -162,8 +171,7 @@ def book_appointment():
         'phone': data.get('phone'),
         'note': data.get('note')
     }
-    #import pdb; pdb.set_trace()
-
+    # import pdb; pdb.set_trace()
 
     # Kiểm tra trùng lặp (Logic bảo vệ)
     # for appt in appointments_db:
@@ -185,13 +193,38 @@ def book_appointment():
 
     return jsonify({'success': True, 'message': 'Đặt lịch thành công!'})
 
+
 @app.route('/medical-record', methods=['get', 'post'])
 @login_required
 def medical_record():
-    patients = dao.load_waiting_patients(current_user.MaNguoiDung)
+    # patients = dao.load_waiting_patients(current_user.MaNguoiDung)
     services = dao.load_services_list()
     # import pdb; pdb.set_trace()
-    return render_template("medical-record.html", patients=patients, services=services, now_time=time(13,0,0))
+    return render_template("medical-record.html", services=services)
+
+@app.route('/api/patient-queue')
+@login_required
+def api_patient_queue():
+    try:
+        now_time = datetime.now().time()
+
+        lichhens = dao.load_waiting_patients(current_user.MaNguoiDung)
+        print(lichhens)
+        result = []
+        for lh in lichhens:
+            result.append({
+                "maBenhNhan": lh.MaBenhNhan,
+                "maLH": lh.MaLH,
+                "hoTen": lh.benhnhan.HoTen,
+                "gioKham": lh.GioKham.strftime('%H:%M'),
+                "isLate": lh.GioKham < now_time
+            })
+
+        return jsonify(result)
+
+    except Exception as ex:
+        print("PATIENT QUEUE ERROR:", ex)
+        return jsonify({"error": str(ex)}), 500
 
 @app.route('/api/patient/<int:pid>')
 def get_patient_info(pid):
@@ -222,9 +255,37 @@ def search_medicines_api():
             "unit": m.DonViTinh,
             "price": float(m.DonGia),
             "stock": m.SoLuongTonKho,
-            "usage": m.LieuDung  # Cách dùng mặc định
+            "usage": m.LieuDung
         })
     return jsonify(result)
+
+
+@app.route('/api/save-examination', methods=['POST'])
+@login_required
+def api_save_examination():
+    try:
+        data = request.json
+
+        ma_pdt = dao.save_examination(
+            ma_benh_nhan=data.get('maBenhNhan'),
+            ma_nha_si=current_user.MaNguoiDung,
+            chuan_doan=data.get('chuanDoan'),
+            service_ids=data.get('services', []),
+            medicines=data.get('medicines', []),
+            ma_lich_hen=data.get('maLichHen')
+        )
+
+        return jsonify({
+            "success": True,
+            "maPDT": ma_pdt
+        })
+
+    except Exception as ex:
+        db.session.rollback()
+        return jsonify({
+            "success": False,
+            "message": str(ex)
+        }), 500
 
 if __name__ == "__main__":
     with app.app_context():

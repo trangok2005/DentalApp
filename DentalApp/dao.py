@@ -4,12 +4,13 @@ from DentalApp import app, db
 from datetime import datetime, date
 import hashlib
 from flask_login import login_user, logout_user, login_required, current_user
-from models import NguoiDung, NhanVien, UserRole, BoPhanEnum, NhaSi, DichVu, LichHen, BenhNhan, Thuoc
+from models import (NguoiDung, NhanVien, UserRole, BoPhanEnum, NhaSi, DichVu, LichHen, BenhNhan, Thuoc,
+                    PhieuDieuTriDichVu, PhieuDieuTri, DonThuoc, ChiTietDonThuoc)
 
 
 def auth_user(username, password, role_from_html):
     # 1. Tìm user theo user/pass
-    #password = hashlib.md5(password.strip().encode('utf-8')).hexdigest()
+    # password = hashlib.md5(password.strip().encode('utf-8')).hexdigest()
     user = NguoiDung.query.filter(
         NguoiDung.TaiKhoan.__eq__(username),
         NguoiDung.MatKhau.__eq__(password)
@@ -58,13 +59,14 @@ def add_Patient(name, username, password, phone):
     db.session.add(user)
     db.session.commit()
 
+
 def check_Phone(phone):
     return BenhNhan.query.filter(BenhNhan.SDT == phone).first()
 
-def add_booking(obj):
 
+def add_booking(obj):
     if current_user.is_authenticated and current_user.VaiTro.value.__eq__("Patient"):
-        patient= current_user
+        patient = current_user
     else:
         patient = add_Patient(
             name=obj['name'],
@@ -73,7 +75,8 @@ def add_booking(obj):
             phone=obj['phone'])
         db.session.add(patient)
         db.session.commit()
-        import pdb; pdb.set_trace()
+        import pdb;
+        pdb.set_trace()
     appt = LichHen(
         NgayKham=obj['date'],
         GioKham=obj['time'],
@@ -88,14 +91,22 @@ def add_booking(obj):
 def get_user_by_id(user_id):
     return NguoiDung.query.get(user_id)
 
+
 def get_patient_info(pid):
     return BenhNhan.query.get(pid)
+
 
 def load_dentist_list():
     return NhaSi.query.all()
 
+
 def load_waiting_patients(dentist_id):
-    return LichHen.query.filter(LichHen.MaNhaSi==dentist_id and LichHen.NgayKham == "2025-12-26" and LichHen.TrangThai.__eq__("ChoKham")).order_by(LichHen.GioKham).all()
+    return LichHen.query.filter(
+        LichHen.MaNhaSi == dentist_id,
+        LichHen.NgayKham == "2025-12-26",
+        LichHen.TrangThai == "ChoKham"
+    ).order_by(LichHen.GioKham).all()
+
 
 def load_services_list():
     return DichVu.query.all()
@@ -121,8 +132,8 @@ def get_appointments_by_dentist_and_date(dentist_id, date):
         .all()
     )
 
-def search_medicines(keyword):
 
+def search_medicines(keyword):
     today = date.today()
     keyword = keyword.lower()
     return Thuoc.query.filter(
@@ -133,7 +144,57 @@ def search_medicines(keyword):
         )
     ).all()
 
+
+def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines, ma_lich_hen):
+    # 1 tạo phiếu lay id trước
+    pdt = PhieuDieuTri(
+        NgayLap=date.today(),
+        ChuanDoan=chuan_doan,
+        MaBenhNhan=ma_benh_nhan,
+        MaNhaSi=ma_nha_si
+    )
+    db.session.add(pdt)
+    db.session.flush()
+
+    # 2 thêm dv
+    if service_ids:
+        dichvus = DichVu.query.filter(
+            DichVu.MaDV.in_(service_ids)
+        ).all()
+        pdt.dichvus = dichvus
+
+    # 3 có kê đơn thì tạo đơn thuốc
+    if medicines and len(medicines) > 0:
+        donthuoc = DonThuoc(
+            NgayKeDon=date.today(),
+            MaPDT=pdt.MaPDT
+        )
+        db.session.add(donthuoc)
+        db.session.flush()
+
+        for item in medicines:
+            ct = ChiTietDonThuoc(
+                MaDT=donthuoc.MaDT,
+                MaThuoc=item["maThuoc"],
+                SoLuong=item["soLuong"],
+                LieuDung=item.get("lieuDung", "")
+            )
+            db.session.add(ct)
+
+            # Trừ tồn kho
+            thuoc = Thuoc.query.get(item["maThuoc"])
+            if thuoc:
+                thuoc.SoLuongTonKho -= item["soLuong"]
+    # 4 cập nhật lich hen đã khám
+    lich_hen = LichHen.query.get(ma_lich_hen)
+    if lich_hen:
+        lich_hen.TrangThai = 'DaKham'
+
+    db.session.commit()
+    return True, pdt.MaPDT
+
+
 if __name__ == "__main__":
     with app.app_context():
-        #datetime.now().date()
-       print(search_medicines("parace"))
+        # datetime.now().date()
+        print(search_medicines("parace"))

@@ -1,0 +1,29 @@
+.queue-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.queue-item.active {
+    background-color: #0d6efd;
+    color: white;
+    font-weight: 600;
+}
+
+.queue-item.text-danger {
+    color: #dc3545;
+}
+
+.queue-item .status {
+    margin-left: 8px;
+    font-size: 0.85rem;
+}
+
+.queue-disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.queue-item.disabled {
+    pointer-events: none;
+}

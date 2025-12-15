@@ -131,7 +131,7 @@ class PhieuDieuTriDichVu(db.Model):
 class Thuoc(db.Model):
     __tablename__ = 'thuoc'
     MaThuoc = Column(Integer, primary_key=True, autoincrement=True)
-    TenThuoc = Column(String(255), nullable=False)  # Đã thêm trường này
+    TenThuoc = Column(String(255), nullable=False)
     DonViTinh = Column(String(50), nullable=False)
     DonGia = Column(Numeric(10, 0), nullable=False)
     SoLuongTonKho = Column(Integer, default=0)
@@ -189,7 +189,7 @@ class HoaDon(db.Model):
 #             HoTen="Nguyễn Văn A",
 #             SDT="0909123456",
 #             TaiKhoan="tvt",
-#             MatKhau="123",  # Thực tế cần hash password
+#             MatKhau="6512bd43d9caa6e02c990b0a82652dca",#123
 #             NgaySinh=date(1990, 5, 15),
 #             DiaChi="123 Lê Lợi, Q1, TP.HCM",
 #             TienSuBenh="Dị ứng thuốc tê nhẹ"
@@ -197,8 +197,8 @@ class HoaDon(db.Model):
 #         lt1 = NhanVien(
 #             HoTen="Lê Thị Hạnh",
 #             TaiKhoan="letan01",
-#             MatKhau="123",
-#             BoPhan=BoPhanEnum.LeTan  # Quan trọng: Định danh bộ phận
+#             MatKhau="6512bd43d9caa6e02c990b0a82652dca",
+#             BoPhan=BoPhanEnum.LeTan
 #         )
 #
 #

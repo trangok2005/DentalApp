@@ -75,7 +75,7 @@
             </div>
 
             <div class="d-flex justify-content-between p-3 mt-3 border-top">
-                <button id="btnKeDonThuoc" class="btn btn-outline-primary" >
+                <button id="btnKeDonThuoc" class="btn btn-outline-primary">
                     KÊ ĐƠN THUỐC
                 </button>
                 <button class="btn btn-save" onclick="saveExamination()">LƯU PHIẾU ĐIỀU TRỊ</button>
@@ -118,7 +118,7 @@
                         <input type="text" class="form-control" id="txtUsage" placeholder="VD: Sáng 1, Tối 1 sau ăn">
                     </div>
                     <div class="col-md-2">
-                       <button id="btnAddMedicine" class="btn btn-primary">Thêm</button>
+                        <button id="btnAddMedicine" class="btn btn-primary">Thêm</button>
                     </div>
                 </div>
 
@@ -141,9 +141,8 @@
             </div>
 
             <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">HỦY BỎ</button>
-                <button type="button" class="btn btn-success" onclick="confirmPrescription()">XÁC NHẬN ĐƠN THUỐC
-                </button>
+                <button type="button" id="btnCancelPrescription" class="btn btn-danger">HỦY BỎ</button>
+                <button id="btnConfirmPrescription" class="btn btn-success">Xác nhận</button>
             </div>
         </div>
     </div>

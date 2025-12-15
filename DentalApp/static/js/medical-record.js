@@ -201,10 +201,6 @@ let prescriptionList = []; // Mảng chứa thuốc đã chọn
 let currentSelectedMed = null; // Thuốc đang chọn tạm ở ô search
 
 // STT 1: Load Form - Mở Modal
-function openPrescription() {
-
-}
-
 document.getElementById('btnKeDonThuoc').addEventListener('click', async () => {
     if (!currentPatientId) {
         alert("Vui lòng chọn bệnh nhân trước!");
@@ -379,9 +375,10 @@ function resetInputSection() {
 
 //render bang va xoa
 
-function removeMedicine(btn) {
+function removeMedicine(btn, index) {
     const row = btn.parentNode.parentNode;
     row.parentNode.removeChild(row);
+      prescriptionList.splice(index, 1);
 }
 
 function renderPrescriptionTable() {
@@ -392,6 +389,7 @@ function renderPrescriptionTable() {
     prescriptionList.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.id = `row--${rowCount}`; // ID để dễ xóa
+        tr.dataset.medId = item.id;
         tr.innerHTML = `
             <td class="text-center">${index + 1}</td>
             <td>${item.name}</td>
@@ -400,12 +398,65 @@ function renderPrescriptionTable() {
             <td class="text-end">${formatCurrency(item.price)}</td>
             <td>${item.usage}</td>
             <td class="text-center">
-                <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="removeMedicine(this)"></i>
+                <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="removeMedicine(this,dataset.medId)"></i>
             </td>
         `;
-
-
 
         tbody.appendChild(tr);
     });
 }
+
+//huy
+const btnCancelPrescription = document.getElementById('btnCancelPrescription');
+btnCancelPrescription.addEventListener('click', function () {
+    // Xác nhận hủy
+    if (!confirm("Bạn có chắc muốn hủy kê đơn không?")) return;
+
+    // Reset dữ liệu
+    prescriptionList = [];
+    currentSelectedMed = null;
+
+    // Reset giao diện
+    resetInputSection();
+    renderPrescriptionTable();
+
+    // Đóng modal
+    const modalEl = document.getElementById('prescriptionModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal.hide();
+
+    // Reset nút KÊ ĐƠN (nếu có)
+//    const btnOpen = document.querySelector('.btn-prescribe');
+//    if (btnOpen) {
+//        btnOpen.innerText = "KÊ ĐƠN THUỐC";
+//        btnOpen.classList.remove('btn-info', 'text-white');
+//        btnOpen.classList.add('btn-outline-info');
+//    }
+});
+
+//Xac nhan luu don thuoc
+
+function confirmPrescription() {
+    if (!confirm("Bạn có chắc muốn lưu kê đơn không?")) return;
+
+    // Đóng Modal (Bootstrap 5 API)
+    const modalEl = document.getElementById('prescriptionModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal.hide();
+
+    // Cập nhật giao diện bên ngoài (Optional)
+    const btnOpen = document.getElementById('btnKeDonThuoc'); // Nút Kê đơn ở màn hình chính
+    console.log(prescriptionList)
+    if (prescriptionList.length > 0) {
+        btnOpen.innerText = `KÊ ĐƠN THUỐC (${prescriptionList.length} thuốc)`;
+        btnOpen.classList.remove('btn-outline-info');
+        btnOpen.classList.add('btn-info', 'text-white');
+    } else {
+        btnOpen.innerText = "KÊ ĐƠN THUỐC";
+    }
+}
+
+btnConfirmPrescription.addEventListener('click', function () {
+    confirmPrescription();
+})
+

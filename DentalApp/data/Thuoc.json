@@ -1,0 +1,25 @@
+[
+  { "TenThuoc": "Paracetamol 500mg", "DonViTinh": "Viên", "DonGia": 2000, "SoLuongTonKho": 500, "HanSuDung": "2026-12-31", "LieuDung": "Uống mỗi 6 giờ" },
+  { "TenThuoc": "Paracetamol 650mg", "DonViTinh": "Viên", "DonGia": 2500, "SoLuongTonKho": 400, "HanSuDung": "2026-11-30", "LieuDung": "Uống khi đau" },
+  { "TenThuoc": "Paracetamol Extra", "DonViTinh": "Viên", "DonGia": 3000, "SoLuongTonKho": 350, "HanSuDung": "2027-01-15", "LieuDung": "Giảm đau nhanh" },
+  { "TenThuoc": "Paracetamol Forte", "DonViTinh": "Viên", "DonGia": 2800, "SoLuongTonKho": 300, "HanSuDung": "2026-10-20", "LieuDung": "Không quá 4 viên/ngày" },
+  { "TenThuoc": "Paracetamol Baby", "DonViTinh": "Chai", "DonGia": 25000, "SoLuongTonKho": 120, "HanSuDung": "2025-12-01", "LieuDung": "Siro trẻ em" },
+
+  { "TenThuoc": "Paracetamol Kid Syrup", "DonViTinh": "Chai", "DonGia": 27000, "SoLuongTonKho": 100, "HanSuDung": "2026-08-10", "LieuDung": "Trẻ em" },
+  { "TenThuoc": "Paracetamol Cold & Flu", "DonViTinh": "Viên", "DonGia": 3500, "SoLuongTonKho": 200, "HanSuDung": "2026-09-30", "LieuDung": "Cảm cúm" },
+  { "TenThuoc": "Paracetamol Plus", "DonViTinh": "Viên", "DonGia": 3200, "SoLuongTonKho": 250, "HanSuDung": "2027-02-02", "LieuDung": "Giảm đau tăng cường" },
+  { "TenThuoc": "Paracetamol Rapid", "DonViTinh": "Viên", "DonGia": 3400, "SoLuongTonKho": 180, "HanSuDung": "2026-06-18", "LieuDung": "Tác dụng nhanh" },
+  { "TenThuoc": "Paracetamol Effervescent", "DonViTinh": "Viên sủi", "DonGia": 4500, "SoLuongTonKho": 150, "HanSuDung": "2026-05-25", "LieuDung": "Hòa tan uống" },
+
+  { "TenThuoc": "Paracetamol 250mg", "DonViTinh": "Viên", "DonGia": 1500, "SoLuongTonKho": 600, "HanSuDung": "2026-04-04", "LieuDung": "Liều thấp" },
+  { "TenThuoc": "Paracetamol 325mg", "DonViTinh": "Viên", "DonGia": 1800, "SoLuongTonKho": 520, "HanSuDung": "2026-03-30", "LieuDung": "Giảm đau nhẹ" },
+  { "TenThuoc": "Paracetamol 500mg Film-coated", "DonViTinh": "Viên", "DonGia": 2300, "SoLuongTonKho": 480, "HanSuDung": "2026-02-14", "LieuDung": "Bao phim" },
+  { "TenThuoc": "Paracetamol Oral Suspension", "DonViTinh": "Chai", "DonGia": 26000, "SoLuongTonKho": 90, "HanSuDung": "2025-11-11", "LieuDung": "Hỗn dịch uống" },
+  { "TenThuoc": "Paracetamol Powder Sachet", "DonViTinh": "Gói", "DonGia": 5000, "SoLuongTonKho": 200, "HanSuDung": "2026-01-01", "LieuDung": "Pha nước uống" },
+
+  { "TenThuoc": "Para 500", "DonViTinh": "Viên", "DonGia": 1900, "SoLuongTonKho": 700, "HanSuDung": "2027-03-03", "LieuDung": "Giảm đau" },
+  { "TenThuoc": "Para Extra 500", "DonViTinh": "Viên", "DonGia": 3100, "SoLuongTonKho": 340, "HanSuDung": "2026-07-07", "LieuDung": "Tăng hiệu quả" },
+  { "TenThuoc": "Para Cold", "DonViTinh": "Viên", "DonGia": 3300, "SoLuongTonKho": 220, "HanSuDung": "2026-08-08", "LieuDung": "Cảm lạnh" },
+  { "TenThuoc": "Para Kids Syrup", "DonViTinh": "Chai", "DonGia": 24000, "SoLuongTonKho": 110, "HanSuDung": "2025-09-09", "LieuDung": "Trẻ em" },
+  { "TenThuoc": "Para Fast Relief", "DonViTinh": "Viên", "DonGia": 3600, "SoLuongTonKho": 160, "HanSuDung": "2026-10-10", "LieuDung": "Giảm đau nhanh" }
+]

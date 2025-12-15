@@ -1,5 +1,5 @@
 #index
-from datetime import datetime
+from datetime import datetime, time
 from flask import render_template, request, redirect, jsonify
 from DentalApp import app, STANDARD_SLOTS, login, db
 import dao
@@ -25,7 +25,7 @@ def login_index():
                 return redirect("/booking")
 
             elif user.VaiTro == UserRole.NhaSi:
-                return redirect("/")
+                return redirect("/medical-record")
 
             # elif user.VaiTro == UserRole.NhanVien:
             #     # Lấy thông tin bộ phận
@@ -84,7 +84,7 @@ def index():
     # thoat user
     if current_user.is_authenticated:
         return redirect("/logout")
-    return render_template("medical-record.html", active_tab='login')
+    return render_template("index.html", active_tab='login')
 
 @login.user_loader
 def get_user(user_id):
@@ -96,6 +96,7 @@ def logout_my_user():
     return redirect("/")
 
 @app.route("/booking")
+@login_required
 def booking():
     # STT 1: Load_Form - Tải danh sách Nha sĩ, Dịch vụ, Ngày hiện tại
     today = datetime.now().strftime('%Y-%m-%d')
@@ -184,13 +185,48 @@ def book_appointment():
 
     return jsonify({'success': True, 'message': 'Đặt lịch thành công!'})
 
-@app.route('/medical-record', methods=['POST'])
+@app.route('/medical-record', methods=['get', 'post'])
+@login_required
 def medical_record():
-    patients = dao.load_waiting_patients()
+    patients = dao.load_waiting_patients(current_user.MaNguoiDung)
     services = dao.load_services_list()
+    # import pdb; pdb.set_trace()
+    return render_template("medical-record.html", patients=patients, services=services, now_time=time(13,0,0))
+
+@app.route('/api/patient/<int:pid>')
+def get_patient_info(pid):
+    p = dao.get_patient_info(pid)
+
+    if not p:
+        return jsonify({"error": "Not found"}), 404
+
+    return jsonify({
+        "MaNguoiDung": p.MaNguoiDung,
+        "HoTen": p.HoTen,
+        "NgaySinh": p.NgaySinh if p.NgaySinh else None,
+        "TienSuBenh": p.TienSuBenh or None
+    })
 
 
+@app.route('/api/medicines/search')
+def search_medicines_api():
+    keyword = request.args.get('q', '')
+    medicines = dao.search_medicines(keyword)
+
+    # Convert object to dict
+    result = []
+    for m in medicines:
+        result.append({
+            "id": m.MaThuoc,
+            "name": m.TenThuoc,
+            "unit": m.DonViTinh,
+            "price": float(m.DonGia),
+            "stock": m.SoLuongTonKho,
+            "usage": m.LieuDung  # Cách dùng mặc định
+        })
+    return jsonify(result)
 
 if __name__ == "__main__":
     with app.app_context():
+        print(dao.get_patient_info(1))
         app.run(debug=True)

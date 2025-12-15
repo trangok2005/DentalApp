@@ -138,6 +138,8 @@ class Thuoc(db.Model):
     HanSuDung = Column(Date)
     LieuDung = Column(Text)  # Hướng dẫn chung
 
+    def __str__(self):
+        return self.TenThuoc
 
 class DonThuoc(db.Model):
     __tablename__ = 'donthuoc'
@@ -178,9 +180,9 @@ class HoaDon(db.Model):
     MaBenhNhan = Column(Integer, ForeignKey('benhnhan.MaNguoiDung'))
     MaPDT = Column(Integer, ForeignKey('phieudieutri.MaPDT'), unique=True)
 
-
-if __name__ == "__main__":
-    with app.app_context():
+#
+# if __name__ == "__main__":
+#     with app.app_context():
 #
 #         db.create_all()
 #         bn1 =BenhNhan(
@@ -222,13 +224,22 @@ if __name__ == "__main__":
         #
         # db.session.commit()
 
-        with open("data/DichVu.json", encoding="utf-8") as f:
-            services = json.load(f)
+        # with open("data/DichVu.json", encoding="utf-8") as f:
+        #     services = json.load(f)
+        #
+        #     for s in services:
+        #         ser = DichVu(**s)
+        #         db.session.add(ser)
+        #
+        # db.session.commit()
 
-            for s in services:
-                ser = DichVu(**s)
-                db.session.add(ser)
-
-        db.session.commit()
+        # with open("data/Thuoc.json", encoding="utf-8") as f:
+        #     medicines = json.load(f)
+        #
+        #     for m in medicines:
+        #         me = Thuoc(**m)
+        #         db.session.add(me)
+        #
+        # db.session.commit()
 
 

@@ -1,0 +1,67 @@
+{%extends 'layout/base.html'%}
+{%block content%}
+<div class="modal fade" id="prescriptionModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">KÊ ĐƠN THUỐC CHO: <span id="lblPrescriptionPatient" class="fw-bold text-primary">...</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3 position-relative">
+            <label class="fw-bold">1. Chọn Thuốc</label>
+            <input type="text" class="form-control" id="txtSearchMedicine" placeholder="Nhập tên thuốc để tìm kiếm..." autocomplete="off">
+
+            <div id="suggestionBox" class="list-group position-absolute w-100 shadow" style="z-index: 1000; display: none; max-height: 200px; overflow-y: auto;">
+                </div>
+        </div>
+
+        <div class="row mb-3 align-items-end">
+            <div class="col-md-2">
+                <label>Số lượng</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="txtQuantity" value="1" min="1">
+                    <span class="input-group-text" id="lblUnit">Viên</span>
+                </div>
+                <small class="text-danger" id="lblStock" style="font-size: 0.8rem;"></small>
+            </div>
+            <div class="col-md-8">
+                <label>Liều dùng</label>
+                <input type="text" class="form-control" id="txtUsage" placeholder="VD: Sáng 1, Tối 1 sau ăn">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-warning w-100 fw-bold" onclick="addMedicineToGrid()">Thêm</button>
+            </div>
+        </div>
+
+        <h6 class="fw-bold">3. Danh sách thuốc đã chọn:</h6>
+        <table class="table table-bordered table-hover">
+            <thead class="table-secondary text-center">
+                <tr>
+                    <th>STT</th>
+                    <th>Tên Thuốc</th>
+                    <th>Đơn vị</th>
+                    <th>SL</th>
+                    <th>Đơn giá</th>
+                    <th>Cách dùng</th>
+                    <th>Xóa</th>
+                </tr>
+            </thead>
+            <tbody id="tblPrescriptionBody">
+                </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">HỦY BỎ</button>
+          <button type="button" class="btn btn-success" onclick="confirmPrescription()">XÁC NHẬN ĐƠN THUỐC</button>
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block scripts%}
+<script src="{{ url_for('static', filename='js/prescription.js') }}"></script>
+{%endblock%}

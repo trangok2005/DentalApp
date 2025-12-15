@@ -99,3 +99,22 @@ time-input { color: orange; font-weight: bold; text-align: center; }
 .table-custom th { background-color: #999; color: white; text-align: center; }
 .btn-save { background-color: #198754; color: white; }
 .btn-prescribe { border: 1px solid #0dcaf0; color: #0dcaf0; background: white; }
+
+//prescription
+/* Hộp gợi ý thuốc */
+.suggestion-box {
+  z-index: 1000;
+  display: none;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Chữ cảnh báo tồn kho */
+#lblStock {
+  font-size: 0.8rem;
+}
+
+/* Modal kê đơn */
+#prescriptionModal .modal-title {
+  font-weight: 600;
+}

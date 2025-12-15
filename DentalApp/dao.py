@@ -1,8 +1,10 @@
+from sqlalchemy import and_
+
 from DentalApp import app, db
 from datetime import datetime, date
 import hashlib
 from flask_login import login_user, logout_user, login_required, current_user
-from models import NguoiDung, NhanVien, UserRole, BoPhanEnum, NhaSi, DichVu, LichHen, BenhNhan
+from models import NguoiDung, NhanVien, UserRole, BoPhanEnum, NhaSi, DichVu, LichHen, BenhNhan, Thuoc
 
 
 def auth_user(username, password, role_from_html):
@@ -86,12 +88,14 @@ def add_booking(obj):
 def get_user_by_id(user_id):
     return NguoiDung.query.get(user_id)
 
+def get_patient_info(pid):
+    return BenhNhan.query.get(pid)
 
 def load_dentist_list():
     return NhaSi.query.all()
 
-def load_waiting_patients():
-    return LichHen.query.filter(LichHen.NgayKham == "2025-12-26" and LichHen.TrangThai.__eq__("ChoKham")).all()
+def load_waiting_patients(dentist_id):
+    return LichHen.query.filter(LichHen.MaNhaSi==dentist_id and LichHen.NgayKham == "2025-12-26" and LichHen.TrangThai.__eq__("ChoKham")).order_by(LichHen.GioKham).all()
 
 def load_services_list():
     return DichVu.query.all()
@@ -117,8 +121,19 @@ def get_appointments_by_dentist_and_date(dentist_id, date):
         .all()
     )
 
+def search_medicines(keyword):
+
+    today = date.today()
+    keyword = keyword.lower()
+    return Thuoc.query.filter(
+        and_(
+            Thuoc.TenThuoc.contains(keyword),
+            Thuoc.SoLuongTonKho > 0,
+            Thuoc.HanSuDung >= today
+        )
+    ).all()
 
 if __name__ == "__main__":
     with app.app_context():
         #datetime.now().date()
-       print(load_waiting_patients())
+       print(search_medicines("parace"))

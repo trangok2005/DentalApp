@@ -9,15 +9,21 @@
                 <div class="queue-header">Hàng chờ</div>
                 <div id="patientQueueList">
                     {% for p in patients %}
-                    {% if p.status != 'Đã khám' %}
-                    <div class="queue-item {% if p.status == 'Đang khám' %}active{% endif %}"
-                         onclick="selectPatient({{ p.id }}, this)">
-                        {{ loop.index }}. {{ p.name }}
-                        {% if p.status == 'Đang khám' %} [Đang khám] {% endif %}
+                    <div class="queue-item
+                                {% if p.TrangThai == 'DangKham' %} active {% endif %}
+                                {% if p.TrangThai == 'ChoKham' and p.GioKham < now_time %} text-danger {% endif %}"
+                         data-pid={{p.MaBenhNhan}}
+                    >
+                        {{ loop.index }}. {{ p.benhnhan.HoTen }} – {{ p.GioKham }}
+                        {% if p.TrangThai == 'ChoKham' and p.GioKham > now_time %}
+                        <span class="status text-muted">[Chờ khám]</span>
+                        {% else %}
+                        <span class="status text-danger">[Muộn giờ]</span>
+                        {% endif %}
                     </div>
-                    {% endif %}
                     {% endfor %}
                 </div>
+
             </div>
         </div>
 
@@ -41,9 +47,9 @@
                         <select class="form-select border-danger text-danger" id="cboServices" onchange="addService()">
                             <option value="" selected disabled>Chọn dịch vụ</option>
                             {% for s in services %}
-                            <option value="{{ s.id }}" data-price="{{ s.price }}" data-name="{{ s.name }}"
-                                    data-desc="{{ s.desc }}">
-                                {{ s.name }}
+                            <option value="{{ s.MaDV }}" data-name="{{ s.TenDV }}" data-price="{{ s.DonGia }}"
+                                    data-desc="{{ s.MoTa }}">
+                                {{ s }}
                             </option>
                             {% endfor %}
                         </select>
@@ -69,167 +75,83 @@
             </div>
 
             <div class="d-flex justify-content-between p-3 mt-3 border-top">
-                <button class="btn btn-prescribe" onclick="openPrescription()">KÊ ĐƠN THUỐC</button>
-
+                <button id="btnKeDonThuoc" class="btn btn-outline-primary" >
+                    KÊ ĐƠN THUỐC
+                </button>
                 <button class="btn btn-save" onclick="saveExamination()">LƯU PHIẾU ĐIỀU TRỊ</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    let currentPatientId = null;
-    let currentTotal = 0;
-    let selectedServiceIds = []; // Mảng chứa các ID dịch vụ đã chọn
+<div class="modal fade" id="prescriptionModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">KÊ ĐƠN THUỐC CHO: <span id="lblPrescriptionPatient"
+                                                                class="fw-bold text-primary">...</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
 
-    // Format tiền tệ (VD: 100000 -> 100.000)
-    function formatCurrency(n) {
-        return new Intl.NumberFormat('vi-VN').format(n);
-    }
+            <div class="modal-body">
+                <div class="mb-3 position-relative">
+                    <label class="fw-bold">1. Chọn Thuốc</label>
+                    <input type="text" class="form-control" id="txtSearchMedicine"
+                           placeholder="Nhập tên thuốc để tìm kiếm..." autocomplete="off">
 
-    // STT 2: Xem thông tin bệnh nhân
-    async function selectPatient(pid, element) {
-        // Highlight UI
-        document.querySelectorAll('.queue-item').forEach(el => el.classList.remove('active'));
-        element.classList.add('active');
+                    <div id="suggestionBox" class="list-group position-absolute w-100 shadow"
+                         style="z-index: 1000; display: none; max-height: 200px; overflow-y: auto;">
+                    </div>
+                </div>
 
-        // Gọi API lấy thông tin
-        try {
-            const res = await fetch(`/api/patient/${pid}`);
-            const data = await res.json();
+                <div class="row mb-3 align-items-end">
+                    <div class="col-md-2">
+                        <label>Số lượng</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="txtQuantity" value="1" min="1">
+                            <span class="input-group-text" id="lblUnit">Viên</span>
+                        </div>
+                        <small class="text-danger" id="lblStock" style="font-size: 0.8rem;"></small>
+                    </div>
+                    <div class="col-md-8">
+                        <label>Liều dùng</label>
+                        <input type="text" class="form-control" id="txtUsage" placeholder="VD: Sáng 1, Tối 1 sau ăn">
+                    </div>
+                    <div class="col-md-2">
+                       <button id="btnAddMedicine" class="btn btn-primary">Thêm</button>
+                    </div>
+                </div>
 
-            if (data.error) { alert('Không tìm thấy bệnh nhân'); return; }
+                <h6 class="fw-bold">3. Danh sách thuốc đã chọn:</h6>
+                <table class="table table-bordered table-hover">
+                    <thead class="table-secondary text-center">
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên Thuốc</th>
+                        <th>Đơn vị</th>
+                        <th>SL</th>
+                        <th>Đơn giá</th>
+                        <th>Cách dùng</th>
+                        <th>Xóa</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tblPrescriptionBody">
+                    </tbody>
+                </table>
+            </div>
 
-            // Binding dữ liệu lên UI
-            currentPatientId = data.id;
-            document.getElementById('lblPatientName').innerText = data.name;
-            document.getElementById('lblPatientAge').innerText = data.age;
-            document.getElementById('lblHistory').innerText = data.history;
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">HỦY BỎ</button>
+                <button type="button" class="btn btn-success" onclick="confirmPrescription()">XÁC NHẬN ĐƠN THUỐC
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
-            // Hiển thị cảnh báo nếu có tiền sử bệnh
-            const warnIcon = document.getElementById('iconWarning');
-            if (data.history && data.history !== "Không có") {
-                warnIcon.style.display = 'inline-block';
-            } else {
-                warnIcon.style.display = 'none';
-            }
+{% endblock %}
 
-            // Reset form cho bệnh nhân mới
-            resetFormPartially();
-
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    // STT 4: Thêm dịch vụ & Tính tiền
-    function addService() {
-        const cbo = document.getElementById('cboServices');
-        const selectedOption = cbo.options[cbo.selectedIndex];
-
-        if (cbo.value === "") return;
-
-        const sId = cbo.value;
-        const sName = selectedOption.getAttribute('data-name');
-        const sPrice = parseInt(selectedOption.getAttribute('data-price'));
-        const sDesc = selectedOption.getAttribute('data-desc');
-
-        // Thêm dòng mới vào bảng
-        const tbody = document.getElementById('tblServiceBody');
-        const rowCount = tbody.rows.length + 1;
-
-        const tr = document.createElement('tr');
-        tr.id = `row-service-${rowCount}`; // ID để dễ xóa
-        tr.innerHTML = `
-            <td class="text-center">${rowCount}</td>
-            <td>${sName}</td>
-            <td class="text-center">${formatCurrency(sPrice)}</td>
-            <td>${sDesc}</td>
-            <td class="text-center">
-                <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="removeService(this, ${sPrice})"></i>
-            </td>
-        `;
-        tbody.appendChild(tr);
-
-        // Tính tổng tiền
-        currentTotal += sPrice;
-        updateTotalLabel();
-
-        // Reset dropdown về default
-        cbo.selectedIndex = 0;
-    }
-
-    // STT 5: Xóa dịch vụ
-    function removeService(btn, price) {
-        // Xóa dòng tr
-        const row = btn.parentNode.parentNode;
-        row.parentNode.removeChild(row);
-
-        // Trừ tiền
-        currentTotal -= price;
-        updateTotalLabel();
-
-        // (Optional) Đánh lại số thứ tự STT nếu cần thiết
-    }
-
-    function updateTotalLabel() {
-        document.getElementById('lblTotal').innerText = formatCurrency(currentTotal);
-    }
-
-    function resetFormPartially() {
-        document.getElementById('txtDiagnosis').value = "";
-        document.getElementById('tblServiceBody').innerHTML = "";
-        currentTotal = 0;
-        updateTotalLabel();
-    }
-
-    // STT 6: Mở trang kê đơn (Mockup)
-    function openPrescription() {
-        if (!currentPatientId) {
-            alert("Vui lòng chọn bệnh nhân trước!");
-            return;
-        }
-        alert(`Đang mở form kê đơn thuốc cho ID: ${currentPatientId}`);
-        // window.open('/ke-don-thuoc?pid=' + currentPatientId, '_blank');
-    }
-
-    // STT 7: Lưu phiếu & Làm mới
-    async function saveExamination() {
-        if (!currentPatientId) {
-            alert("Chưa chọn bệnh nhân!");
-            return;
-        }
-
-        const diagnosis = document.getElementById('txtDiagnosis').value;
-        // Lấy danh sách dịch vụ từ bảng (để chính xác những gì đang hiển thị)
-        // Trong thực tế, có thể duy trì 1 mảng object services
-
-        const payload = {
-            patient_id: currentPatientId,
-            diagnosis: diagnosis,
-            total_amount: currentTotal,
-            // services: ... (List các dịch vụ đã chọn)
-        };
-
-        try {
-            const res = await fetch('/api/save-examination', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            const result = await res.json();
-
-            if (result.success) {
-                alert(result.message);
-                // Reload trang để cập nhật lại Hàng chờ (Bệnh nhân đã khám sẽ mất đi hoặc đổi trạng thái)
-                location.reload();
-            } else {
-                alert("Lỗi: " + result.message);
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Lỗi kết nối server");
-        }
-    }
-</script>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/medical-record.js') }}"></script>
+<script src="{{ url_for('static', filename='js/prescription.js') }}" defer></script>
 {% endblock %}

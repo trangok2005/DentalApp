@@ -28,7 +28,7 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <div style="width: 50%;">
-                        <select class="form-select border-danger text-danger" id="cboServices" onchange="addService()">
+                        <select class="form-select border-danger text-danger" id="cboServices" >
                             <option value="" selected disabled>Chọn dịch vụ</option>
                             {% for s in services %}
                             <option value="{{ s.MaDV }}" data-name="{{ s.TenDV }}" data-price="{{ s.DonGia }}"

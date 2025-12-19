@@ -126,16 +126,26 @@ async function selectPatient(pid, element) {
 // huy cua lập phiếu
 document.getElementById('btnCancelExam').addEventListener('click', async () => {
     const isConfirmed = await showAlert(
-        "Xác nhận hủy?",
+        "Xác nhận hủy lập phiếu?",
         "Dữ liệu sẽ không được lưu lại!!"
     );
-    if(!isConfirmed) return;
+
+    if (!isConfirmed) return;
+
     resetFormPartially();
+
+    const btnOpen = document.getElementById("btnKeDonThuoc");
+    if (btnOpen) {
+        btnOpen.innerText = "KÊ ĐƠN THUỐC";
+        btnOpen.classList.remove('btn-info', 'text-white');
+        btnOpen.classList.add('btn-outline-info');
+    }
 });
 
+
 // STT 4: Thêm dịch vụ & Tính tiền
-function addService() {
-    const cbo = document.getElementById('cboServices');
+document.getElementById('cboServices').addEventListener('change', function() {
+     const cbo = document.getElementById('cboServices');
     const selectedOption = cbo.options[cbo.selectedIndex];
 
     if (cbo.value === "") return;
@@ -143,7 +153,7 @@ function addService() {
     const sId = cbo.value;
 
     if (selectedServiceIds.includes(sId)) {
-        alert("Dịch vụ này đã được chọn!");
+        Alert.error("", "Dịch vụ này đã được chọn!");
         cbo.selectedIndex = 0;
         return;
     }
@@ -161,16 +171,16 @@ function addService() {
     const rowCount = tbody.rows.length + 1;
 
     const tr = document.createElement('tr');
-//    tr.id = `row-service-${rowCount}`; // ID để dễ xóa
-    tr.innerHTML = `
+   //id = `row-service-${rowCount}`; // để dễ xóa
+   tr.innerHTML = `
         <td class="text-center">${rowCount}</td>
         <td>${sName}</td>
         <td class="text-center">${formatCurrency(sPrice)}</td>
         <td>${sDesc}</td>
         <td class="text-center">
-            <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="removeService(this, ${sPrice})"></i>
+            <i class="bi bi-trash text-danger btn-remove-service" style="cursor:pointer;"></i>
         </td>
-    `;
+   `;
     tbody.appendChild(tr);
 
     // Tính tổng tiền
@@ -179,23 +189,37 @@ function addService() {
 
     // Reset dropdown về default
     cbo.selectedIndex = 0;
+});
+
+// Xóa dịch vụ
+//xoa khoi list, xoa UI, cap nhat stt
+function removeItem(list, row, Id, tBody) {
+    const index = list.findIndex(m => m.id == Id);
+    if (index !== -1) {
+        list.splice(index, 1);
+    }
+    row.remove();
+    reindexTable(tBody);
 }
 
-// STT 5: Xóa dịch vụ
-function removeService(btn, price) {
-    // Xóa dòng tr
-    const row = btn.parentNode.parentNode;
-    row.parentNode.removeChild(row);
+document.getElementById('tblServiceBody').addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-remove-service');
+    if (!btn) return;
+
+    const row = btn.closest('tr');
+    const price = parseInt(row.dataset.price);
+    const serviceId = row.dataset.serviceId;
 
     // Trừ tiền
     currentTotal -= price;
     updateTotalLabel();
-    //
-    reindexServiceTable();
-}
+
+    //goi ham xoa
+    removeItem(selectedServiceIds, row, serviceId, "#tblServiceBody")
+});
 //danh stt
-function reindexServiceTable() {
-    const rows = document.querySelectorAll('#tblServiceBody tr');
+function reindexTable(tbodySelector) {
+    const rows = document.querySelectorAll(`${tbodySelector} tr`);
     rows.forEach((tr, index) => {
         // Cột STT là td đầu tiên
         tr.children[0].innerText = index + 1;
@@ -212,6 +236,7 @@ function resetFormPartially() {
     document.getElementById('txtDiagnosis').value = "";
     document.getElementById('tblServiceBody').innerHTML = "";
     currentTotal = 0;
+    currentPatientId = null;
     prescriptionList = []
     selectedServiceIds=[]
     updateTotalLabel();
@@ -235,7 +260,7 @@ function resetFormPartially() {
 //load form + mở modal
 document.getElementById('btnKeDonThuoc').addEventListener('click', async () => {
     if (!currentPatientId) {
-        alert("Vui lòng chọn bệnh nhân trước!");
+        Alert.warning("Chưa chọn bênh nhân", "Vui lòng chọn bệnh nhân trước!");
         return;
     }
 
@@ -318,10 +343,10 @@ function selectMedicine(med) {
     suggestionBox.style.display = 'none';
 }
 
-//them vao ds tam
+//btn them thuoc vao ds tam
 function addMedicineToGrid() {
     if (!currentSelectedMed) {
-        alert("Vui lòng chọn thuốc từ danh sách gợi ý!");
+        Alert.warning("Chưa chọn thuốc", "Vui lòng chọn thuốc từ danh sách gợi ý!");
         return;
     }
 
@@ -331,17 +356,17 @@ function addMedicineToGrid() {
 
     // Validate
     if (isNaN(qty) || qty <= 0) {
-        alert("Số lượng phải lớn hơn 0");
+        Alert.warning("Lưu ý", "Số lượng phải lớn hơn 0");
         return;
     }
 
     if (qty > stock) {
-        alert(`Vượt quá tồn kho! (Tối đa: ${stock})`);
+         Alert.warning("Lưu ý", `Vượt quá tồn kho! (Tối đa: ${stock})`);
         return;
     }
 
     if (!usage) {
-        alert("Vui lòng nhập liều dùng!");
+         Alert.warning("Lưu ý", "Vui lòng nhập liều dùng!");
         return;
     }
 
@@ -354,7 +379,7 @@ function addMedicineToGrid() {
         const newQty = prescriptionList[existIndex].quantity + qty;
 
         if (newQty > stock) {
-            alert(`Tổng số lượng (${newQty}) vượt quá tồn kho (${stock})!`);
+            Alert.warning("Cảnh báo", `Tổng số lượng (${newQty}) vượt quá tồn kho (${stock})!`);
             return;
         }
 
@@ -379,6 +404,7 @@ document.getElementById("btnAddMedicine").addEventListener('click', function () 
     addMedicineToGrid();
 });
 
+//reset form tim thuốc
 function resetInputSection() {
     // Ô tìm thuốc
     txtSearch.value = '';
@@ -405,25 +431,6 @@ function resetInputSection() {
 }
 
 //render bang va xoa
-
-function removeMedicine(btn) {
-
-    const row = btn.parentNode.parentNode;
-    const medId = row.dataset.medId; // ✅ ĐÚNG ID
-
-    // Tim trong array
-    const index = prescriptionList.findIndex(
-        m => m.id == medId
-    );
-
-    if (index === -1) return;
-
-    // xoa data
-    prescriptionList.splice(index, 1);
-    //xoa giao dien
-    row.parentNode.removeChild(row);
-}
-
 function renderPrescriptionTable() {
     const tbody = document.getElementById('tblPrescriptionBody');
     const rowCount = tbody.rows.length;
@@ -431,7 +438,7 @@ function renderPrescriptionTable() {
 
     prescriptionList.forEach((item, index) => {
         const tr = document.createElement('tr');
-        tr.id = `${rowCount}`; // ID để dễ xóa
+        //tr.id = `${rowCount}`;
         tr.dataset.medId = item.id;
         console.log(tr.dataset.medId)
         console.log(tr.id)
@@ -443,7 +450,7 @@ function renderPrescriptionTable() {
             <td class="text-end">${formatCurrency(item.price)}</td>
             <td>${item.usage}</td>
             <td class="text-center">
-                <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="removeMedicine(this,)"></i>
+                <i class="bi bi-trash text-danger btn-remove-med" style="cursor:pointer;"></i>
             </td>
         `;
 
@@ -451,15 +458,25 @@ function renderPrescriptionTable() {
     });
 }
 
-//huy
+document.getElementById('tblPrescriptionBody').addEventListener('click', async function (e) {
+    const btn = e.target.closest('.btn-remove-med');
+    if (!btn) return;
+
+    const row = btn.closest('tr');
+    const medId = row.dataset.medId;
+    //goi ham xoa
+    removeItem(prescriptionList, row, medId, "#tblPrescriptionBody");
+});
+
+//huy kê đơn
 const btnCancelPrescription = document.getElementById('btnCancelPrescription');
-btnCancelPrescription.addEventListener('click', async () => {
-    // Xác nhận hủy
-   const isConfirmed = await showAlert(
-        "Xác nhận hủy?",
+btnCancelPrescription.addEventListener('click', async function () {
+    const isConfirmed = await showAlert(
+        "Xác nhận hủy kê đơn?",
         "Dữ liệu sẽ không được lưu lại!!"
     );
-   if(!isConfirmed) return;
+
+    if (!isConfirmed) return;
 
     // Reset dữ liệu
     prescriptionList = [];
@@ -474,7 +491,7 @@ btnCancelPrescription.addEventListener('click', async () => {
     const modal = bootstrap.Modal.getInstance(modalEl);
     modal.hide();
 
-    //reset nút ke don
+    // Reset nút kê đơn
     const btnOpen = document.getElementById("btnKeDonThuoc");
     if (btnOpen) {
         btnOpen.innerText = "KÊ ĐƠN THUỐC";
@@ -483,13 +500,15 @@ btnCancelPrescription.addEventListener('click', async () => {
     }
 });
 
-//Xac nhan luu don thuoc
-function confirmPrescription() {
+// lưu đơn thuốc
+btnConfirmPrescription.addEventListener('click',async () => {
     const isConfirmed = await showAlert(
         "Xác nhận Lưu Đơn Thuốc?",
-        "Sao khi lưu bạn có thể chỉnh sửa trước khi hoàn tất phiếu khám"
+        "Sau khi lưu bạn có thể chỉnh sửa trước khi hoàn tất phiếu khám"
     );
-    if(!isConfirmed) return;
+
+    if (!isConfirmed) return;
+
 
     // Đóng Modal (Bootstrap 5 API)
     const modalEl = document.getElementById('prescriptionModal');
@@ -506,25 +525,35 @@ function confirmPrescription() {
     } else {
         btnOpen.innerText = "KÊ ĐƠN THUỐC";
     }
-}
-
-btnConfirmPrescription.addEventListener('click', function () {
-    confirmPrescription();
 })
 
 //Hoan thanh phieu khám và lưu CSDl
 document.getElementById('btnLuuPhieu').addEventListener('click', async () => {
-    const isConfirmed = await showAlert(
-        "Xác nhận Hoàn tất Phiếu khám??",
-        "Vui lòng đảm bảo thông tin chính xác trước khi xác nhận."
-    );
-    if(!isConfirmed) return;
-
-
     if (!currentPatientId) {
-        Alert.error("Lỗi", "Chưa chọn bệnh nhân");
+        Alert.error("Thiếu thông tin", "Chưa chọn bệnh nhân");
         return;
     }
+
+    const diagnosis = document.getElementById("txtDiagnosis")
+    if (!diagnosis.value.trim()) {
+        Alert.warning("Thiếu thông tin", "Vui lòng nhập chẩn đoán");
+        diagnosis.focus();
+        return;
+    }
+
+    // Kiểm tra đã chọn dịch vụ
+    if (!selectedServiceIds || selectedServiceIds.length === 0) {
+        Alert.warning("Thiếu thông tin", "Vui lòng chọn ít nhất 1 dịch vụ");
+        return;
+    }
+
+    const isConfirmed = await showAlert(
+        "Xác nhận Hoàn tất Phiếu khám?",
+       "Kiểm tra thông tin trước khi xác nhận!!"
+    );
+
+    if (!isConfirmed) return;
+
 
     const payload = {
         maBenhNhan: currentPatientId,
@@ -550,13 +579,13 @@ document.getElementById('btnLuuPhieu').addEventListener('click', async () => {
         const data = await res.json();
 
         if (data.success) {
-            alert("Lưu phiếu khám thành công!");
+            Alert.success("Hoàn tất","Lưu phiếu khám thành công!");
             resetFormPartially();
         } else {
-            alert(data.message || "Lưu thất bại");
+            Alert.error(data.message, "Lưu thất bại");
         }
     } catch (err) {
         console.error(err);
-        alert("Lỗi kết nối server");
+        Alert.error("Lỗi","Lỗi kết nối server");
     }
 })

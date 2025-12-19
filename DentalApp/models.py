@@ -6,17 +6,24 @@ import enum
 from flask_login import UserMixin
 import json
 
-
 class UserRole(enum.Enum):
+    QuanLy = "Manager"   # Tách Quản lý thành Role riêng
     NhaSi = "Dentist"
     BenhNhan = "Patient"
     NhanVien = "Staff"
 
+class TrangThaiLichHen(enum.Enum):
 
-class BoPhanEnum(enum.Enum):
-    LeTan = "Reception"
-    ThuNgan = "Cashier"
-    QuanLy = "Manager"
+    CHO_KHAM = "Chờ Khám"
+    DA_KHAM = "Đã Khám" # Bác sĩ đã khám xong -> Chờ thanh toán
+    HUY = "Hủy"
+
+    def __str__(self):
+        return self.value
+
+class TrangThaiThanhToan(enum.Enum):
+    Da_Thanh_Toan = "DaThanhToan"
+    Chua_Thanh_Toan = "ChuaThanhToan"
 
 
 # --- Bảng Người Dùng (Base) ---
@@ -77,10 +84,21 @@ class NhaSi(NguoiDung):
 class NhanVien(NguoiDung):
     __tablename__ = 'nhanvien'
     MaNguoiDung = Column(Integer, ForeignKey('nguoidung.MaNguoiDung'), primary_key=True)
-    BoPhan = Column(Enum(BoPhanEnum), nullable=False, default=BoPhanEnum.LeTan)
+    TrinhDo = Column(Text)
+
+    hoadons = relationship("HoaDon", backref="nhanvien", lazy=True)
 
     __mapper_args__ = {
         'polymorphic_identity': UserRole.NhanVien,
+    }
+
+class QuanLy(NguoiDung):
+    __tablename__ = 'quanly'
+    MaNguoiDung = Column(Integer, ForeignKey('nguoidung.MaNguoiDung'), primary_key=True)
+    SoNamKinhNghiem =Column(Integer)
+
+    __mapper_args__ = {
+        'polymorphic_identity': UserRole.QuanLy,
     }
 
 # --- Lịch Hẹn ---
@@ -89,11 +107,32 @@ class LichHen(db.Model):
     MaLH = Column(Integer, primary_key=True, autoincrement=True)
     NgayKham = Column(Date, nullable=False)
     GioKham = Column(Time, nullable=False)  # Dùng kiểu Time thay vì Integer
-    TrangThai = Column(String(50), default="ChoKham")  # Mặc định trạng thái
+    TrangThai = Column(Enum(TrangThaiLichHen), default=TrangThaiLichHen.CHO_KHAM)  # Mặc định trạng thái
     GhiChu = Column(Text)
 
     MaNhaSi = Column(Integer, ForeignKey('nhasi.MaNguoiDung'))
     MaBenhNhan = Column(Integer, ForeignKey('benhnhan.MaNguoiDung'))
+
+    @property
+    def thong_tin_hoa_don(self):
+        """
+        Hàm helper để tìm Hóa đơn tương ứng với lịch hẹn này.
+        Logic: Tìm Phiếu điều trị của Bệnh nhân này vào Ngày khám này.
+        """
+        # Import cục bộ để tránh lỗi circular import
+        from models import PhieuDieuTri, HoaDon
+
+        # 1. Tìm phiếu điều trị khớp User và Ngày
+        pdt = PhieuDieuTri.query.filter_by(
+            MaBenhNhan=self.MaBenhNhan,
+            NgayLap=self.NgayKham
+        ).first()
+
+        # 2. Nếu có phiếu, trả về hóa đơn (nếu có)
+        if pdt and pdt.hoadon:
+            return pdt.hoadon
+
+        return None
 
 class PhieuDieuTri(db.Model):
     __tablename__ = 'phieudieutri'
@@ -174,72 +213,71 @@ class HoaDon(db.Model):
     TongTienThuoc = Column(Numeric(12, 0), default=0)
     # VAT có thể là Float vì là % nhưng tiền phải là Numeric. Ở đây để đơn giản lưu tiền VAT
     VAT = Column(Numeric(12, 0), default=0)
-    PTTT = Column(String(50))  # Phương thức thanh toán (Momo, Cash...)
+    PTTT = Column(String(50))  # Phương thức thanh toán
     TrangThai = Column(String(50), default="ChuaThanhToan")
 
     MaBenhNhan = Column(Integer, ForeignKey('benhnhan.MaNguoiDung'))
     MaPDT = Column(Integer, ForeignKey('phieudieutri.MaPDT'), unique=True)
-
+    MaNhanVien = Column(Integer, ForeignKey('nhanvien.MaNguoiDung'))
 #
-# if __name__ == "__main__":
-#     with app.app_context():
-#
-#         db.create_all()
-#         bn1 =BenhNhan(
-#             HoTen="Nguyễn Văn A",
-#             SDT="0909123456",
-#             TaiKhoan="tvt",
-#             MatKhau="6512bd43d9caa6e02c990b0a82652dca",#123
-#             NgaySinh=date(1990, 5, 15),
-#             DiaChi="123 Lê Lợi, Q1, TP.HCM",
-#             TienSuBenh="Dị ứng thuốc tê nhẹ"
-#         )
-#         lt1 = NhanVien(
-#             HoTen="Lê Thị Hạnh",
-#             TaiKhoan="letan01",
-#             MatKhau="6512bd43d9caa6e02c990b0a82652dca",
-#             BoPhan=BoPhanEnum.LeTan
-#         )
-#
-#
-#         db.session.add_all([bn1,lt1])
-#         db.session.commit()
+if __name__ == "__main__":
+    with app.app_context():
 
-        # with open("data/NhaSi.json", encoding="utf-8") as f:
-        #     dentists = json.load(f)
-        #
-        #     for d in dentists:
-        #         den = NhaSi(**d)
-        #         db.session.add(den)
-        #
-        # db.session.commit()
-        #
-        #
-        # with open("data/LichKham.json", encoding="utf-8") as f:
-        #     appointments = json.load(f)
-        #
-        #     for item in appointments:
-        #         appt = LichHen(**item)
-        #         db.session.add(appt)
-        #
-        # db.session.commit()
+        db.create_all()
+        bn1 =BenhNhan(
+            HoTen="Nguyễn Văn A",
+            SDT="0909123456",
+            TaiKhoan="tvt",
+            MatKhau="6512bd43d9caa6e02c990b0a82652dca",#123
+            NgaySinh=date(1990, 5, 15),
+            DiaChi="123 Lê Lợi, Q1, TP.HCM",
+            TienSuBenh="Dị ứng thuốc tê nhẹ"
+        )
+        lt1 = NhanVien(
+            HoTen="Lê Thị Hạnh",
+            TaiKhoan="letan01",
+            MatKhau="6512bd43d9caa6e02c990b0a82652dca",
+        )
 
-        # with open("data/DichVu.json", encoding="utf-8") as f:
-        #     services = json.load(f)
-        #
-        #     for s in services:
-        #         ser = DichVu(**s)
-        #         db.session.add(ser)
-        #
-        # db.session.commit()
 
-        # with open("data/Thuoc.json", encoding="utf-8") as f:
-        #     medicines = json.load(f)
-        #
-        #     for m in medicines:
-        #         me = Thuoc(**m)
-        #         db.session.add(me)
-        #
-        # db.session.commit()
+        db.session.add_all([bn1,lt1])
+        db.session.commit()
+
+        with open("data/NhaSi.json", encoding="utf-8") as f:
+            dentists = json.load(f)
+
+            for d in dentists:
+                den = NhaSi(**d)
+                db.session.add(den)
+
+        db.session.commit()
+
+
+        with open("data/LichKham.json", encoding="utf-8") as f:
+            appointments = json.load(f)
+
+            for item in appointments:
+                appt = LichHen(**item)
+                db.session.add(appt)
+
+        db.session.commit()
+
+        with open("data/DichVu.json", encoding="utf-8") as f:
+            services = json.load(f)
+
+            for s in services:
+                ser = DichVu(**s)
+                db.session.add(ser)
+
+        db.session.commit()
+
+        with open("data/Thuoc.json", encoding="utf-8") as f:
+            medicines = json.load(f)
+
+            for m in medicines:
+                me = Thuoc(**m)
+                db.session.add(me)
+
+        db.session.commit()
 
 

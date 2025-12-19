@@ -4,8 +4,10 @@ from DentalApp import app, db
 from datetime import datetime, date
 import hashlib
 from flask_login import login_user, logout_user, login_required, current_user
-from models import (NguoiDung, NhanVien, UserRole, BoPhanEnum, NhaSi, DichVu, LichHen, BenhNhan, Thuoc,
-                    PhieuDieuTriDichVu, PhieuDieuTri, DonThuoc, ChiTietDonThuoc)
+
+
+from models import (NguoiDung, NhanVien, UserRole, NhaSi, DichVu, LichHen, BenhNhan, Thuoc,
+                    PhieuDieuTriDichVu, PhieuDieuTri, DonThuoc, ChiTietDonThuoc, TrangThaiLichHen)
 
 
 def auth_user(username, password, role_from_html):
@@ -25,31 +27,8 @@ def auth_user(username, password, role_from_html):
     elif role_from_html == 'nhasi':
         return user if user.VaiTro == UserRole.NhaSi else None
 
-    # 3. Nếu HTML gửi lên là nhóm nhân viên (letan, thungan, quanly)
-    # Thì user phải là NhanVien VÀ có Bộ phận tương ứng
-    elif role_from_html in ['letan', 'thungan', 'quanly']:
-
-        # Trước hết phải là Nhân viên đã
-        if user.VaiTro != UserRole.NhanVien:
-            return None
-
-        # Ép kiểu user về NhanVien để lấy thuộc tính BoPhan
-        # (SQLAlchemy thường tự làm, nhưng an toàn thì query lại hoặc check trực tiếp nếu đã load)
-        nhan_vien = NhanVien.query.get(user.MaNguoiDung)
-
-        # Mapping string HTML -> Enum Python
-        bophan_mapping = {
-            'letan': BoPhanEnum.LeTan,
-            'thungan': BoPhanEnum.ThuNgan,
-            'quanly': BoPhanEnum.QuanLy
-        }
-
-        # Kiểm tra bộ phận
-        if nhan_vien.BoPhan == bophan_mapping.get(role_from_html):
-            return user
-        else:
-            return None  # Đúng là nhân viên nhưng sai bộ phận (VD: Thu ngân đăng nhập vào Lễ tân)
-
+    elif role_from_html == 'nhanvien':
+        return user if user.VaiTro == UserRole.NhanVien else None
     return None
 
 
@@ -65,27 +44,54 @@ def check_Phone(phone):
 
 
 def add_booking(obj):
-    if current_user.is_authenticated and current_user.VaiTro.value.__eq__("Patient"):
+    # 1. Xác định bệnh nhân là ai
+    patient = None
+
+    # TH1: Nếu người dùng đang login là bệnh nhân
+    if current_user.is_authenticated and current_user.VaiTro.value == "Patient":
         patient = current_user
+
+    # TH2: Lễ tân đặt hộ (hoặc khách vãng lai)
     else:
-        patient = add_Patient(
-            name=obj['name'],
-            username=obj['name'],
-            password=obj['phone'],
-            phone=obj['phone'])
-        db.session.add(patient)
+        # Kiểm tra xem SĐT này đã có trong DB chưa
+        existing_patient = BenhNhan.query.filter_by(SDT=obj['phone']).first()
+
+        if existing_patient:
+            # A. Đã có => Dùng lại bệnh nhân này
+            patient = existing_patient
+            # Có thể cập nhật lại tên nếu lễ tân sửa (tùy chọn)
+            # patient.HoTen = obj['name']
+        else:
+            # B. Chưa có => Tạo bệnh nhân mới
+            try:
+                # Username lấy theo SĐT để tránh trùng, password mặc định
+                patient = add_Patient(
+                    name=obj['name'],
+                    username=obj['phone'],
+                    password=obj['phone'],  # Mật khẩu mặc định là SĐT
+                    phone=obj['phone']
+                )
+                db.session.add(patient)
+                db.session.commit()  # Commit để lấy được MaNguoiDung
+            except Exception as e:
+                db.session.rollback()
+                print("Lỗi tạo user mới:", e)
+                return False
+
+    # 2. Tạo lịch hẹn
+    if patient:
+        appt = LichHen(
+            NgayKham=obj['date'],
+            GioKham=obj['time'],
+            GhiChu=obj.get('note'),
+            MaNhaSi=obj['dentist_id'],
+            MaBenhNhan=patient.MaNguoiDung  # ID lấy từ patient (cũ hoặc mới)
+        )
+        db.session.add(appt)
         db.session.commit()
-        import pdb;
-        pdb.set_trace()
-    appt = LichHen(
-        NgayKham=obj['date'],
-        GioKham=obj['time'],
-        TrangThai='ChoKham',
-        GhiChu=obj.get('note'),
-        MaNhaSi=obj['dentist_id'],
-        MaBenhNhan=patient.MaNguoiDung)
-    db.session.add(appt)
-    db.session.commit()
+        return True
+
+    return False
 
 
 def get_user_by_id(user_id):
@@ -188,11 +194,33 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
     # 4 cập nhật lich hen đã khám
     lich_hen = LichHen.query.get(ma_lich_hen)
     if lich_hen:
-        lich_hen.TrangThai = 'DaKham'
+        lich_hen.TrangThai = TrangThaiLichHen.DA_KHAM
 
     db.session.commit()
     return True, pdt.MaPDT
 
+
+def get_lich_hen_by_id(ma_lh):
+    """Lấy thông tin lịch hẹn theo ID"""
+    return LichHen.query.get(ma_lh)
+
+
+def huy_lich_hen(ma_lh, ghi_chu_huy):
+    try:
+        lh = LichHen.query.get(ma_lh)
+        if lh:
+            lh.TrangThai = TrangThaiLichHen.HUY
+            # Nối thêm lý do hủy vào ghi chú cũ (nếu có)
+            old_note = lh.GhiChu if lh.GhiChu else ""
+            lh.GhiChu = f"{old_note} | [Đã hủy: {ghi_chu_huy}]".strip(' | ')
+
+            db.session.commit()
+            return True
+        return False
+    except Exception as e:
+        print(f"Lỗi khi hủy lịch: {e}")
+        db.session.rollback()
+        return False
 
 if __name__ == "__main__":
     with app.app_context():

@@ -26,29 +26,32 @@
                     <div class="col-sm-9">
                         <input type="text" class="form-control time-input" id="selectedTime" readonly
                                placeholder="Chọn từ danh sách"
-                               name= "time"
+                               name="time"
                         >
 
-                    </div>
-                </div>
-
-                <div class="mb-3 row align-items-center">
-                    <label class="col-sm-3 col-form-label">Họ Tên</label>
-                    <div class="col-sm-9">
-                        <input type="text" class="form-control" id="patientName" placeholder="Nhập họ tên"
-                               value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.HoTen }}{% endif %}"
-                               name = "name"
-                        >
                     </div>
                 </div>
 
                 <div class="mb-3 row align-items-center">
                     <label class="col-sm-3 col-form-label">SĐT</label>
                     <div class="col-sm-9">
-                        <input type="text" class="form-control" id="patientPhone" placeholder="09xxxxxxx"
+                        <input type="text" class="form-control" id="patientPhone" name="phone"
+                               data-is-staff="{{ 'true' if current_user.VaiTro.name == 'NhanVien' else 'false' }}"
+                               placeholder="09xxxxxxx"
                                value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.SDT }}{% endif %}"
-                               {% if current_user.VaiTro.value == 'Patient' %}readonly{% endif %}
-                        >
+                               {% if current_user.VaiTro.value== 'Patient' %}readonly{% endif %}>
+                        <small id="phoneFeedback" class="text-success" style="display:none;">
+                            <i class="fas fa-check-circle"></i> Tìm thấy bệnh nhân cũ
+                        </small>
+                    </div>
+                </div>
+
+                <div class="mb-3 row align-items-center">
+                    <label class="col-sm-3 col-form-label">Họ Tên</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="patientName" name="name"
+                               placeholder="Nhập họ tên"
+                               value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.HoTen }}{% endif %}">
                     </div>
                 </div>
 

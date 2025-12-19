@@ -1,9 +1,9 @@
 # index
-from datetime import datetime, time
-from flask import render_template, request, redirect, jsonify
+from datetime import datetime, time, date
+from flask import render_template, request, redirect, jsonify, url_for, flash
 from DentalApp import app, STANDARD_SLOTS, login, db
 import dao
-from models import UserRole, BoPhanEnum
+from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien
 from flask_login import login_user, logout_user, login_required, current_user
 
 
@@ -18,26 +18,21 @@ def login_index():
 
         import hashlib
         password = hashlib.md5(password.encode()).hexdigest()
-        print(username, password)
-        # Ktra
+
         user = dao.auth_user(username, password, role)
 
-        # Điều hướng theo vai trò
+        print(username, password)
+        #         # Ktraeo vai trò
         if user:
             login_user(user)
-            if user.VaiTro == UserRole.BenhNhan or (
-                    user.VaiTro == UserRole.NhanVien and user.BoPhan == BoPhanEnum.LeTan):
+            if user.VaiTro == UserRole.BenhNhan:
                 return redirect("/booking")
 
             elif user.VaiTro == UserRole.NhaSi:
                 return redirect("/medical-record")
 
-            # elif user.VaiTro == UserRole.NhanVien:
-            #     # Lấy thông tin bộ phận
-            #     nv = NhanVien.query.get(user.MaNguoiDung)
-            #
-            #     if nv.BoPhan == BoPhanEnum.LeTan:
-            #         return redirect("/")
+            elif user.VaiTro == UserRole.NhanVien:
+                return redirect("/reception/dashboard")
             #     elif nv.BoPhan == BoPhanEnum.ThuNgan:
             #         return redirect("/")
             #     elif nv.BoPhan == BoPhanEnum.QuanLy:
@@ -159,6 +154,24 @@ def get_slots():
     })
 
 
+@app.route('/api/find-patient', methods=['POST'])
+def find_patient_by_phone():
+    data = request.json
+    phone = data.get('phone')
+
+    # Gọi DAO để tìm người dùng (bạn cần viết hàm này trong DAO)
+    # Giả sử hàm dao.get_user_by_phone trả về object User hoặc None
+    user = dao.check_Phone(phone)
+
+    if user:
+        return jsonify({
+            'found': True,
+            'name': user.HoTen,
+            'id': user.MaNguoiDung  # Trả về ID để sau này dùng nếu cần
+        })
+    else:
+        return jsonify({'found': False})
+
 @app.route('/api/book', methods=['POST'])
 def book_appointment():
     # Btn_XacNhan_Click - Lưu vào Database
@@ -182,7 +195,13 @@ def book_appointment():
     #
 
     try:
-        dao.add_booking(new_appointment)
+        # Gọi hàm add_booking đã được sửa lại logic (xem bước 4)
+        result = dao.add_booking(data)
+
+        if result:
+            return jsonify({'success': True, 'message': 'Đặt lịch thành công!'})
+        else:
+            return jsonify({'success': False, 'message': 'Không thể tạo lịch hẹn!'})
     except Exception as ex:
         db.session.rollback()
         print(ex)
@@ -201,6 +220,7 @@ def medical_record():
     services = dao.load_services_list()
     # import pdb; pdb.set_trace()
     return render_template("medical-record.html", services=services)
+
 
 @app.route('/api/patient-queue')
 @login_required
@@ -225,6 +245,7 @@ def api_patient_queue():
     except Exception as ex:
         print("PATIENT QUEUE ERROR:", ex)
         return jsonify({"error": str(ex)}), 500
+
 
 @app.route('/api/patient/<int:pid>')
 def get_patient_info(pid):
@@ -286,6 +307,71 @@ def api_save_examination():
             "success": False,
             "message": str(ex)
         }), 500
+
+
+# Le tan
+@app.route('/reception/dashboard')
+def reception_dashboard():
+    # 1. Lấy tham số filter từ URL
+    selected_date_str = request.args.get('date', str(date.today()))
+    doctor_id = request.args.get('doctor_id')
+    keyword = request.args.get('keyword')
+
+    # 2. Query cơ bản: Lấy lịch hẹn của ngày đã chọn
+    query = LichHen.query.filter(LichHen.NgayKham == selected_date_str)
+
+    # 3. Apply Filters
+    if doctor_id and doctor_id != 'all':
+        query = query.filter(LichHen.MaNhaSi == doctor_id)
+
+    if keyword:
+        # Join bảng BenhNhan để tìm theo tên hoặc SĐT
+        query = query.join(BenhNhan).filter(
+            (BenhNhan.HoTen.contains(keyword)) | (BenhNhan.SDT.contains(keyword))
+        )
+
+    # Sắp xếp theo giờ khám
+    ds_lichhen = query.order_by(LichHen.GioKham.asc()).all()
+
+    # Lấy danh sách nha sĩ để hiện trong dropdown
+    ds_nhasi = NhaSi.query.all()
+
+    return render_template('reception-dashboard.html',
+                           ds_lichhen=ds_lichhen,
+                           ds_nhasi=ds_nhasi,
+                           selected_date=selected_date_str,
+                           selected_doctor=int(doctor_id) if doctor_id else None,
+                           keyword=keyword if keyword else "")
+
+
+# Route xử lý hủy lịch
+@app.route('/cancel-appointment', methods=['POST'])
+def cancel_appointment_route():
+    # 1. Lấy dữ liệu xử lý hủy
+    ma_lh = request.form.get('ma_lh')
+    ly_do = request.form.get('ly_do')
+
+    # 2. Lấy dữ liệu Filter để phục hồi trạng thái cũ
+    # (Lấy từ các input hidden mình vừa thêm ở Bước 1)
+    current_date = request.form.get('current_date')
+    current_doctor = request.form.get('current_doctor')
+    current_keyword = request.form.get('current_keyword')
+
+    # 3. Gọi DAO xử lý hủy (Logic cũ của bạn)
+    if ma_lh and ly_do:
+        result = dao.huy_lich_hen(ma_lh, ly_do)
+        if result:
+            flash('Đã hủy lịch hẹn thành công!', 'success')
+        else:
+            flash('Lỗi: Không tìm thấy lịch hẹn.', 'danger')
+
+    # 4. Redirect THÔNG MINH (Kèm theo tham số cũ)
+    # url_for sẽ tự tạo ra link kiểu: /reception/dashboard?date=2023-12-18&keyword=Tuan...
+    return redirect(url_for('reception_dashboard',
+                            date=current_date,
+                            doctor_id=current_doctor,
+                            keyword=current_keyword))
+
 
 if __name__ == "__main__":
     with app.app_context():

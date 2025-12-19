@@ -8,63 +8,100 @@ const selectedTimeInput = document.getElementById('selectedTime');
 
 // Hàm load danh sách giờ
 async function loadSlots() {
-const dentist = dentistSelect.value;
-const date = dateInput.value;
+    const dentist = dentistSelect.value;
+    const date = dateInput.value;
 
-// Hiển thị ngày lên giao diện phải
-const [y, m, d] = date.split('-');
-displayDate.innerText = `${d}/${m}/${y}`;
+    if(!dentist || !date) return;
 
-const response = await fetch('/api/get-slots', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ dentist, date })
-});
+    // Hiển thị ngày lên giao diện phải
+    const [y, m, d] = date.split('-');
+    displayDate.innerText = `${d}/${m}/${y}`;
 
-const data = await response.json();
+    const response = await fetch('/api/get-slots', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ dentist, date })
+    });
 
-// Xóa bảng cũ
-slotsTableBody.innerHTML = '';
-selectedTimeInput.value = ''; // Reset ô giờ chọn
+    const data = await response.json();
 
-if (data.status === 'full') {
-    statusText.innerText = `${data.booked_count}/5 ca đã đặt (Full)`;
-    statusText.className = 'text-danger fw-bold';
-    slotsTableBody.innerHTML = `<tr><td colspan="3" class="text-danger text-center">${data.message}</td></tr>`;
-    return;
-}
+    // Xóa bảng cũ
+    slotsTableBody.innerHTML = '';
+    selectedTimeInput.value = ''; // Reset ô giờ chọn
 
-// Cập nhật trạng thái text
-statusText.innerText = `${data.booked_count}/5 ca đã đặt`;
-statusText.className = 'text-dark';
-
-// STT 5: Render Grid
-data.slots.forEach((slot, index) => {
-    const tr = document.createElement('tr');
-
-    // Xử lý class nếu đã đặt
-    if (slot.status === 'Đã đặt') {
-        tr.className = 'slot-booked';
-    } else {
-        // STT 6: Sự kiện Click chọn giờ
-        tr.onclick = function() {
-            // Remove highlight cũ
-            document.querySelectorAll('.slot-row-selected').forEach(row => row.classList.remove('slot-row-selected'));
-            // Add highlight mới
-            tr.classList.add('slot-row-selected');
-            // Điền vào ô input bên trái
-            selectedTimeInput.value = slot.time;
-        };
+    if (data.status === 'full') {
+        statusText.innerText = `${data.booked_count}/5 ca đã đặt (Full)`;
+        statusText.className = 'text-danger fw-bold';
+        slotsTableBody.innerHTML = `<tr><td colspan="3" class="text-danger text-center">${data.message}</td></tr>`;
+        return;
     }
 
-    tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>[${slot.time}]</td>
-        <td>${slot.status}</td>
-    `;
-    slotsTableBody.appendChild(tr);
-});
+    // Cập nhật trạng thái text
+    statusText.innerText = `${data.booked_count}/5 ca đã đặt`;
+    statusText.className = 'text-dark';
+
+    // STT 5: Render Grid
+    data.slots.forEach((slot, index) => {
+        const tr = document.createElement('tr');
+
+        // Xử lý class nếu đã đặt
+        if (slot.status === 'Đã đặt') {
+            tr.className = 'slot-booked';
+        } else {
+            // STT 6: Sự kiện Click chọn giờ
+            tr.onclick = function() {
+                // Remove highlight cũ
+                document.querySelectorAll('.slot-row-selected').forEach(row => row.classList.remove('slot-row-selected'));
+                // Add highlight mới
+                tr.classList.add('slot-row-selected');
+                // Điền vào ô input bên trái
+                selectedTimeInput.value = slot.time;
+            };
+        }
+
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>[${slot.time}]</td>
+            <td>${slot.status}</td>
+        `;
+        slotsTableBody.appendChild(tr);
+    });
 }
+
+//ktra user đã tồn tại khi dăt lich hộ
+document.getElementById('patientPhone').addEventListener('blur', async function() {
+    // 1. Check quyền: Nếu không phải staff thì dừng ngay
+    const isStaff = this.getAttribute('data-is-staff') === 'true';
+    if (!isStaff) return;
+
+    const phone = this.value;
+    if (phone.length < 9) return;
+
+    try {
+        const response = await fetch('/api/find-patient', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: phone })
+        });
+
+        if (!response.ok) throw new Error('Network error');
+
+        const data = await response.json();
+
+        const nameInput = document.getElementById('patientName');
+        const feedback = document.getElementById('phoneFeedback');
+
+        if (data.found) {
+            nameInput.value = data.name;
+            feedback.style.display = 'block';
+        } else {
+            feedback.style.display = 'none';
+        }
+
+    } catch (err) {
+        console.error(err);
+    }
+});
 
 // Sự kiện thay đổi Nha sĩ hoặc Ngày
 dentistSelect.addEventListener('change', loadSlots);

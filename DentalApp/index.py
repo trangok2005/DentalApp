@@ -17,7 +17,7 @@ def login_index():
         role = request.form.get("role")
 
         import hashlib
-        password = hashlib.md5(password.encode()).hexdigest()
+        #password = hashlib.md5(password.encode()).hexdigest()
 
         user = dao.auth_user(username, password, role)
 
@@ -372,6 +372,63 @@ def cancel_appointment_route():
                             doctor_id=current_doctor,
                             keyword=current_keyword))
 
+@app.route("/dental-bill")
+def dental_bill():
+    ma_lh = request.args.get('ma_lh')
+    records = dao.load_record(ma_lh)
+
+    return render_template("dental-bill.html",records=records )
+
+
+@app.route('/api/get-dental-bill-info/<int:ma_pdt>', methods=['GET'])
+def get_dental_bill_info(ma_pdt):
+    try:
+        # Gọi hàm xử lý dưới DAO
+        data = dao.get_dental_bill_details(ma_pdt)
+
+        if not data:
+            return jsonify({'success': False, 'message': 'Không tìm thấy phiếu điều trị'}), 404
+
+        # Lấy data
+        tien_kham = data['tien_kham']
+        tien_thuoc = data['tien_thuoc']
+        vat = data['vat']
+        tong_tien = data['tong_tien']
+
+        return jsonify({
+            'success': True,
+            'ho_ten': data['ho_ten'],
+            'tien_kham': tien_kham,
+            'tien_thuoc': tien_thuoc,
+            'vat': vat,
+            'tong_tien': tong_tien
+        })
+
+    except Exception as e:
+        print(f"Lỗi tính hóa đơn: {str(e)}")
+        return jsonify({'success': False, 'message': 'Lỗi hệ thống'}), 500
+
+
+@app.route('/api/pay', methods=['POST'])
+@login_required  # Bắt buộc đăng nhập mới được thanh toán
+def pay():
+    data = request.json
+
+    ma_pdt = data.get('maPDT')
+    pttt = data.get('paymentMethod')  # 'TienMat' hoặc 'ChuyenKhoan'
+    ghi_chu = data.get('ghiChu')
+    ma_nhan_vien=current_user.MaNguoiDung
+
+    if not ma_pdt or not pttt:
+        return jsonify({'success': False, 'message': 'Thiếu thông tin thanh toán'})
+
+    # Gọi hàm DAO để lưu
+    result = dao.add_dental_bill(ma_pdt, pttt, ma_nhan_vien, ghi_chu)
+
+    if result:
+        return jsonify({'success': True, 'message': 'Thanh toán thành công!'})
+    else:
+        return jsonify({'success': False, 'message': 'Lỗi hệ thống hoặc phiếu này đã thanh toán rồi'})
 
 if __name__ == "__main__":
     with app.app_context():

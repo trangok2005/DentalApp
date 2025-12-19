@@ -1,6 +1,8 @@
 from datetime import date, time
-from DentalApp import db, app
-from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey, Enum, Numeric, Time, func
+
+
+from DentalApp import db, app, VAT
+from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey, Enum, Numeric, Time, func, DateTime
 from sqlalchemy.orm import relationship, backref
 import enum
 from flask_login import UserMixin
@@ -212,9 +214,10 @@ class HoaDon(db.Model):
     TongTienDV = Column(Numeric(12, 0), default=0)
     TongTienThuoc = Column(Numeric(12, 0), default=0)
     # VAT có thể là Float vì là % nhưng tiền phải là Numeric. Ở đây để đơn giản lưu tiền VAT
-    VAT = Column(Numeric(12, 0), default=0)
+    VAT = Column(Numeric(12, 0), default=VAT)
     PTTT = Column(String(50))  # Phương thức thanh toán
     TrangThai = Column(String(50), default=TrangThaiThanhToan.Chua_Thanh_Toan)
+    NgayThanhToan = Column(DateTime)
 
     MaBenhNhan = Column(Integer, ForeignKey('benhnhan.MaNguoiDung'))
     MaPDT = Column(Integer, ForeignKey('phieudieutri.MaPDT'), unique=True)
@@ -224,60 +227,60 @@ if __name__ == "__main__":
     with app.app_context():
 
         db.create_all()
-        bn1 =BenhNhan(
-            HoTen="Nguyễn Văn A",
-            SDT="0909123456",
-            TaiKhoan="tvt",
-            MatKhau="6512bd43d9caa6e02c990b0a82652dca",#123
-            NgaySinh=date(1990, 5, 15),
-            DiaChi="123 Lê Lợi, Q1, TP.HCM",
-            TienSuBenh="Dị ứng thuốc tê nhẹ"
-        )
-        lt1 = NhanVien(
-            HoTen="Lê Thị Hạnh",
-            TaiKhoan="letan01",
-            MatKhau="6512bd43d9caa6e02c990b0a82652dca",
-        )
-
-
-        db.session.add_all([bn1,lt1])
-        db.session.commit()
-
-        with open("data/NhaSi.json", encoding="utf-8") as f:
-            dentists = json.load(f)
-
-            for d in dentists:
-                den = NhaSi(**d)
-                db.session.add(den)
-
-        db.session.commit()
-
-
-        with open("data/LichKham.json", encoding="utf-8") as f:
-            appointments = json.load(f)
-
-            for item in appointments:
-                appt = LichHen(**item)
-                db.session.add(appt)
-
-        db.session.commit()
-
-        with open("data/DichVu.json", encoding="utf-8") as f:
-            services = json.load(f)
-
-            for s in services:
-                ser = DichVu(**s)
-                db.session.add(ser)
-
-        db.session.commit()
-
-        with open("data/Thuoc.json", encoding="utf-8") as f:
-            medicines = json.load(f)
-
-            for m in medicines:
-                me = Thuoc(**m)
-                db.session.add(me)
-
-        db.session.commit()
+        # bn1 =BenhNhan(
+        #     HoTen="Nguyễn Văn A",
+        #     SDT="0909123456",
+        #     TaiKhoan="tvt",
+        #     MatKhau="6512bd43d9caa6e02c990b0a82652dca",#123
+        #     NgaySinh=date(1990, 5, 15),
+        #     DiaChi="123 Lê Lợi, Q1, TP.HCM",
+        #     TienSuBenh="Dị ứng thuốc tê nhẹ"
+        # )
+        # lt1 = NhanVien(
+        #     HoTen="Lê Thị Hạnh",
+        #     TaiKhoan="letan01",
+        #     MatKhau="6512bd43d9caa6e02c990b0a82652dca",
+        # )
+        #
+        #
+        # db.session.add_all([bn1,lt1])
+        # db.session.commit()
+        #
+        # with open("data/NhaSi.json", encoding="utf-8") as f:
+        #     dentists = json.load(f)
+        #
+        #     for d in dentists:
+        #         den = NhaSi(**d)
+        #         db.session.add(den)
+        #
+        # db.session.commit()
+        #
+        #
+        # with open("data/LichKham.json", encoding="utf-8") as f:
+        #     appointments = json.load(f)
+        #
+        #     for item in appointments:
+        #         appt = LichHen(**item)
+        #         db.session.add(appt)
+        #
+        # db.session.commit()
+        #
+        # with open("data/DichVu.json", encoding="utf-8") as f:
+        #     services = json.load(f)
+        #
+        #     for s in services:
+        #         ser = DichVu(**s)
+        #         db.session.add(ser)
+        #
+        # db.session.commit()
+        #
+        # with open("data/Thuoc.json", encoding="utf-8") as f:
+        #     medicines = json.load(f)
+        #
+        #     for m in medicines:
+        #         me = Thuoc(**m)
+        #         db.session.add(me)
+        #
+        # db.session.commit()
 
 

@@ -1,6 +1,6 @@
 # index
 from datetime import datetime, time, date
-from flask import render_template, request, redirect, jsonify, url_for, flash
+from flask import render_template, request, redirect, jsonify, url_for, flash, abort
 from DentalApp import app, STANDARD_SLOTS, login, db
 import dao
 from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien
@@ -17,7 +17,7 @@ def login_index():
         role = request.form.get("role")
 
         import hashlib
-        #password = hashlib.md5(password.encode()).hexdigest()
+        password = hashlib.md5(password.encode()).hexdigest()
 
         user = dao.auth_user(username, password, role)
 
@@ -33,8 +33,6 @@ def login_index():
 
             elif user.VaiTro == UserRole.NhanVien:
                 return redirect("/reception/dashboard")
-            #     elif nv.BoPhan == BoPhanEnum.ThuNgan:
-            #         return redirect("/")
             #     elif nv.BoPhan == BoPhanEnum.QuanLy:
             #         return redirect("/")
 
@@ -172,17 +170,18 @@ def find_patient_by_phone():
     else:
         return jsonify({'found': False})
 
+
 @app.route('/api/book', methods=['POST'])
 def book_appointment():
     # Btn_XacNhan_Click - Lưu vào Database
     data = request.json
     new_appointment = {
-        'dentist_id': data.get('dentist'),
+        'dentist_id': data.get('dentist_id'),
         'date': data.get('date'),
         'time': data.get('time'),
         'name': data.get('name'),
         'phone': data.get('phone'),
-        'note': data.get('note')
+        'note': data.get('patientNote')
     }
     # import pdb; pdb.set_trace()
 
@@ -207,12 +206,12 @@ def book_appointment():
         print(ex)
         return jsonify({'success': False, 'message': 'Loi he thong!'})
 
-    # Giả lập gửi SMS
+    #Giả lập gửi SMS
     print(f">> SMS gửi đến {new_appointment['phone']}: Đặt lịch thành công lúc {new_appointment['time']}!")
 
     return jsonify({'success': True, 'message': 'Đặt lịch thành công!'})
 
-
+# Nha sĩ ------------------------------------------------------------------------
 @app.route('/medical-record', methods=['get', 'post'])
 @login_required
 def medical_record():
@@ -372,12 +371,13 @@ def cancel_appointment_route():
                             doctor_id=current_doctor,
                             keyword=current_keyword))
 
-@app.route("/dental-bill")
-def dental_bill():
-    ma_lh = request.args.get('ma_lh')
-    records = dao.load_record(ma_lh)
 
-    return render_template("dental-bill.html",records=records )
+@app.route("/dental-bill/<int:ma_lh>")
+def dental_bill(ma_lh):
+    invoice = dao.load_invoice(ma_lh)
+    # import pdb; pdb.set_trace()
+    return render_template("dental-bill.html", invoice=invoice)
+
 
 
 @app.route('/api/get-dental-bill-info/<int:ma_pdt>', methods=['GET'])
@@ -414,21 +414,38 @@ def get_dental_bill_info(ma_pdt):
 def pay():
     data = request.json
 
-    ma_pdt = data.get('maPDT')
-    pttt = data.get('paymentMethod')  # 'TienMat' hoặc 'ChuyenKhoan'
-    ghi_chu = data.get('ghiChu')
-    ma_nhan_vien=current_user.MaNguoiDung
+    payment_info = {
+        'MaHD': data.get('MaHD'),
+        'PTTT': data.get('PTTT'),
+        'MaNhanVien': current_user.MaNguoiDung
+    }
 
-    if not ma_pdt or not pttt:
-        return jsonify({'success': False, 'message': 'Thiếu thông tin thanh toán'})
+    try:
+        # 4. Thực thi logic nghiệp vụ
+        # Giả sử dao.complete_payment trả về True/False hoặc raise Exception
+        is_success = dao.complete_payment(payment_info)
 
-    # Gọi hàm DAO để lưu
-    result = dao.add_dental_bill(ma_pdt, pttt, ma_nhan_vien, ghi_chu)
+        if is_success:
+            return jsonify({
+                'success': True,
+                'message': 'Thanh toán hóa đơn thành công!'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Không thể thanh toán. Hóa đơn có thể đã hoàn tất hoặc bị hủy.'
+            }), 400
 
-    if result:
-        return jsonify({'success': True, 'message': 'Thanh toán thành công!'})
-    else:
-        return jsonify({'success': False, 'message': 'Lỗi hệ thống hoặc phiếu này đã thanh toán rồi'})
+    except Exception as e:
+        # Nên dùng logging thay vì print trong môi trường production
+        import traceback
+        traceback.print_exc()
+
+        return jsonify({
+            'success': False,
+            'message': f'Lỗi hệ thống: {str(e)}'
+        }), 500
+
 
 if __name__ == "__main__":
     with app.app_context():

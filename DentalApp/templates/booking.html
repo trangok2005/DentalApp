@@ -8,7 +8,7 @@
             <form id="bookingForm">
                 <div class="mb-3">
                     <label class="form-label">Chọn Nha Sĩ</label>
-                    <select class="form-select" id="dentistSelect">
+                    <select class="form-select" id="dentistSelect" name="dentist_id">
                         <option value="" selected disabled>-- Chọn Nha Sĩ --</option>
                         {{ dentists }}
                         {% for d in dentists %}
@@ -18,7 +18,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <input type="date" class="form-control" id="dateInput" value="{{ today }}">
+                    <input name="date" type="date" class="form-control" id="dateInput" value="{{ today }}">
                 </div>
 
                 <div class="mb-3 row align-items-center">

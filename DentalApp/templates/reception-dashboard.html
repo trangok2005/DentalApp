@@ -94,9 +94,9 @@ Quản Lý Lịch Hẹn | Phòng Khám Nha Khoa
                         </td>
 
                         <td>
-                                    <span class="badge bg-light text-dark border">
-                                        {{ lh.nhasi.HoTen }}
-                                    </span>
+                            <span class="badge bg-light text-dark border">
+                                {{ lh.nhasi.HoTen }}
+                            </span>
                         </td>
 
                         <td>
@@ -108,8 +108,10 @@ Quản Lý Lịch Hẹn | Phòng Khám Nha Khoa
                         </td>
 
                         <td class="text-end pe-4">
-                            {# 1. CHỜ KHÁM #}
-                            {% if lh.TrangThai.value == 'ChoKham' %}
+
+                            {# CHỜ KHÁM #}
+                            {% if lh.TrangThai.value == 'Chờ Khám' %}
+
                             <div class="btn-group">
                                 <button type="button"
                                         class="btn btn-outline-danger btn-sm js-cancel-btn"
@@ -119,19 +121,23 @@ Quản Lý Lịch Hẹn | Phòng Khám Nha Khoa
                                 </button>
                             </div>
 
-                            {# 3. ĐÃ KHÁM -> HIỆN NÚT THANH TOÁN #}
-                            {% elif lh.TrangThai.value == 'DaKham' %}
-                            {% elif lh.TrangThai.value == 'DaKham' %}
-                            <a href="{{ url_for('dental_bill', ma_lh=lh.MaLH) }}"
-                               class="btn btn-success btn-sm fw-bold">
-                                <i class="fas fa-file-invoice-dollar me-1"></i> Thanh toán
-                            </a>
+                            {# TRỄ GIỜ #}
+                            {% if lh.is_late %}
+                            <span class="badge bg-warning text-dark ms-2">Trễ giờ</span>
                             {% endif %}
 
-                            {# 4. CÁC TRẠNG THÁI KHÁC #}
-                            {% elif lh.TrangThai.value == 'Huy' %}
-                            <span class="badge bg-danger">Đã hủy</span>
+                            {# ĐÃ KHÁM #}
+                            {% elif lh.TrangThai.value == 'Đã Khám' %}
 
+                            <a href="{{ url_for('dental_bill', ma_lh=lh.MaLH) }}"
+                               class="btn btn-success btn-sm fw-bold">
+                                Thanh toán
+                            </a>
+
+
+                            {# ĐÃ HỦY #}
+                            {% elif lh.TrangThai.value == 'Hủy' %}
+                            <span class="badge bg-danger">Đã hủy</span>
                             {% endif %}
                         </td>
                     </tr>

@@ -123,13 +123,13 @@ const res = await fetch('/api/book', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
-        dentist: dentistSelect.value,
-        date: dateInput.value,
-        time: time,
-        name: name,
-        phone: phone,
-        note: note
-    })
+    dentist_id: document.getElementById('dentistSelect').value,
+    date: document.getElementById('dateInput').value,
+    time: selectedTimeInput.value,
+    phone: document.getElementById('patientPhone').value,
+    name: document.getElementById('patientName').value,
+    patientNote: document.getElementById('patientNote').value
+  })
 });
 //nhan
 const result = await res.json();

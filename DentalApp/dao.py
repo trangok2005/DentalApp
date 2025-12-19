@@ -7,7 +7,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 
 from models import (NguoiDung, NhanVien, UserRole, NhaSi, DichVu, LichHen, BenhNhan, Thuoc,
-                    PhieuDieuTriDichVu, PhieuDieuTri, DonThuoc, ChiTietDonThuoc, TrangThaiLichHen, HoaDon)
+                    PhieuDieuTriDichVu, PhieuDieuTri, DonThuoc, ChiTietDonThuoc, TrangThaiLichHen, HoaDon, TrangThaiThanhToan)
 
 
 def auth_user(username, password, role_from_html):
@@ -109,7 +109,7 @@ def load_dentist_list():
 def load_waiting_patients(dentist_id):
     return LichHen.query.filter(
         LichHen.MaNhaSi == dentist_id,
-        LichHen.NgayKham == "2025-12-26",
+        LichHen.NgayKham == "2025-12-20",
         LichHen.TrangThai == TrangThaiLichHen.CHO_KHAM
     ).order_by(LichHen.GioKham).all()
 
@@ -162,6 +162,10 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
     db.session.add(pdt)
     db.session.flush()
 
+    # Biến để cộng dồn tiền
+    tong_tien_dv = 0
+    tong_tien_thuoc = 0
+
     # 2 thêm dv
     if service_ids:
         dichvus = DichVu.query.filter(
@@ -169,12 +173,18 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
         ).all()
         pdt.dichvus = dichvus
 
+        # Cộng tiền dịch vụ
+        for dv in dichvus:
+            tong_tien_dv += dv.DonGia
+
     # 3 có kê đơn thì tạo đơn thuốc
     if medicines and len(medicines) > 0:
         donthuoc = DonThuoc(
             NgayKeDon=date.today(),
             MaPDT=pdt.MaPDT
         )
+
+
         db.session.add(donthuoc)
         db.session.flush()
 
@@ -187,10 +197,13 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
             )
             db.session.add(ct)
 
-            # Trừ tồn kho
-            thuoc = Thuoc.query.get(item["maThuoc"])
-            if thuoc:
-                thuoc.SoLuongTonKho -= item["soLuong"]
+            thuoc_db = Thuoc.query.get(ct.MaThuoc)
+            if thuoc_db:
+                # Trừ kho
+                thuoc_db.SoLuongTonKho -= ct.SoLuong
+
+                # Tính tiền: Giá bán * Số lượng
+                tong_tien_thuoc += (thuoc_db.DonGia * ct.SoLuong)
 
 
     # 4 cập nhật lich hen đã khám
@@ -200,14 +213,12 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
 
         # 5. TẠO HÓA ĐƠN (Mới thêm)
         hoa_don = HoaDon(
-            NgayLap=date.today(),
             MaBenhNhan=ma_benh_nhan,
             MaPDT=pdt.MaPDT,
-            # Lưu người tạo hóa đơn
+            TongTienDV=tong_tien_dv,
+            TongTienThuoc=tong_tien_thuoc
         )
         db.session.add(hoa_don)
-
-
 
     db.session.commit()
     return True, pdt.MaPDT
@@ -236,94 +247,74 @@ def huy_lich_hen(ma_lh, ghi_chu_huy):
         return False
 
 #Hoa don ------------------------------------------------------------------
-def load_record(ma_lh=None):
-    """
-    Lấy danh sách hóa đơn.
-    - Nếu có ma_lh: Tìm các hóa đơn khớp với thông tin của lịch hẹn đó.
-    - Nếu không: Lấy toàn bộ hóa đơn.
-    """
+def load_invoice(ma_lh: int):
+    lh = LichHen.query.get(ma_lh)
 
-    # # 1. Nếu không truyền mã lịch hẹn -> Trả về tất cả hóa đơn (sắp xếp mới nhất)
-    # if not ma_lh:
-    #     return HoaDon.query.order_by(HoaDon.MaHD.desc()).all()
+    if not lh:
+        return None
 
-    # 2. Nếu có mã lịch hẹn -> Xử lý tìm kiếm
-    try:
-        # A. Lấy thông tin Lịch Hẹn để biết: Ai khám? Ngày nào? Bác sĩ nào?
-        lh = LichHen.query.get(ma_lh)
-
-        if not lh:
-            return []  # Không tìm thấy lịch hẹn thì không có hóa đơn nào
-
-        # B. Query:
-        # - Join bảng HoaDon với PhieuDieuTri (để lọc theo điều kiện phiếu)
-        # - So sánh 3 điều kiện:
-        #   1. Cùng mã bệnh nhân (lh.MaBenhNhan)
-        #   2. Cùng ngày khám (lh.NgayKham)
-        #   3. Cùng bác sĩ (lh.MaNhaSi) - để chính xác nhất
-
-        records = HoaDon.query.join(PhieuDieuTri).filter(
-            PhieuDieuTri.MaBenhNhan == lh.MaBenhNhan,
-            PhieuDieuTri.NgayLap == lh.NgayKham,
-            PhieuDieuTri.MaNhaSi == lh.MaNhaSi
-        ).all()
-
-        return records
-
-    except Exception as ex:
-        print(f"Lỗi khi load hóa đơn theo lịch hẹn: {ex}")
-        return []
-
-def search_medicines(keyword):
-    today = date.today()
-    keyword = keyword.lower()
-    return Thuoc.query.filter(
-        and_(
-            Thuoc.TenThuoc.contains(keyword),
-            Thuoc.SoLuongTonKho > 0,
-            Thuoc.HanSuDung >= today
-        )
-    ).all()
-
-def get_dental_bill_details(ma_pdt):
-    # 1. Lấy phiếu điều trị
-    pdt = PhieuDieuTri.query.get(ma_pdt)
+    pdt = PhieuDieuTri.query.filter_by(
+        MaBenhNhan=lh.MaBenhNhan,
+        NgayLap=lh.NgayKham,
+        MaNhaSi=lh.MaNhaSi
+    ).first()
 
     if not pdt:
         return None
 
-    # 2. Lấy tên bệnh nhân (BenhNhan kế thừa NguoiDung nên có HoTen)
-    ten_benh_nhan = pdt.benhnhan.HoTen if pdt.benhnhan else "Khách vãng lai"
+    return pdt.hoadon
 
-    # 3. Tính tiền dịch vụ
-    # pdt.dichvus là relationship Many-to-Many đã định nghĩa trong models
-    tong_tien_dv = 0
-    for dv in pdt.dichvus:
-        tong_tien_dv += float(dv.DonGia)  # Convert Decimal sang float
 
-    # 4. Tính tiền thuốc
-    tong_tien_thuoc = 0
-    # Kiểm tra xem phiếu có đơn thuốc không (vì quan hệ 1-1 có thể null)
-    if pdt.donthuoc:
-        for ct in pdt.donthuoc.chitiet:
-            # ct.thuoc là relationship lấy thông tin thuốc
-            # ct.SoLuong lấy từ bảng chi tiết
-            don_gia_thuoc = float(ct.thuoc.DonGia)
-            thanh_tien = don_gia_thuoc * ct.SoLuong
-            tong_tien_thuoc += thanh_tien
-
-    vat, tong_tien = 0,0
-    vat = (tong_tien_thuoc + tong_tien_dv) * 0.1
-    tong_tien = tong_tien_dv + tong_tien_thuoc + vat
-
-    return {
-        "success": True,
-        "ho_ten": ten_benh_nhan,
-        "tien_kham": tong_tien_dv,
-        "tien_thuoc": tong_tien_thuoc,
-        "vat": vat,
-        "tong_tien": tong_tien
-    }
+# def search_medicines(keyword):
+#     today = date.today()
+#     keyword = keyword.lower()
+#     return Thuoc.query.filter(
+#         and_(
+#             Thuoc.TenThuoc.contains(keyword),
+#             Thuoc.SoLuongTonKho > 0,
+#             Thuoc.HanSuDung >= today
+#         )
+#     ).all()
+#
+# def get_dental_bill_details(ma_pdt):
+#     # 1. Lấy phiếu điều trị
+#     pdt = PhieuDieuTri.query.get(ma_pdt)
+#
+#     if not pdt:
+#         return None
+#
+#     # 2. Lấy tên bệnh nhân (BenhNhan kế thừa NguoiDung nên có HoTen)
+#     ten_benh_nhan = pdt.benhnhan.HoTen if pdt.benhnhan else "Khách vãng lai"
+#
+#     # 3. Tính tiền dịch vụ
+#     # pdt.dichvus là relationship Many-to-Many đã định nghĩa trong models
+#     tong_tien_dv = 0
+#     for dv in pdt.dichvus:
+#         tong_tien_dv += float(dv.DonGia)  # Convert Decimal sang float
+#
+#     # 4. Tính tiền thuốc
+#     tong_tien_thuoc = 0
+#     # Kiểm tra xem phiếu có đơn thuốc không (vì quan hệ 1-1 có thể null)
+#     if pdt.donthuoc:
+#         for ct in pdt.donthuoc.chitiet:
+#             # ct.thuoc là relationship lấy thông tin thuốc
+#             # ct.SoLuong lấy từ bảng chi tiết
+#             don_gia_thuoc = float(ct.thuoc.DonGia)
+#             thanh_tien = don_gia_thuoc * ct.SoLuong
+#             tong_tien_thuoc += thanh_tien
+#
+#     vat, tong_tien = 0,0
+#     vat = (tong_tien_thuoc + tong_tien_dv) * 0.1
+#     tong_tien = tong_tien_dv + tong_tien_thuoc + vat
+#
+#     return {
+#         "success": True,
+#         "ho_ten": ten_benh_nhan,
+#         "tien_kham": tong_tien_dv,
+#         "tien_thuoc": tong_tien_thuoc,
+#         "vat": vat,
+#         "tong_tien": tong_tien
+#     }
 
 
 def add_dental_bill(ma_pdt, pttt, ma_nhan_vien, ghi_chu=None):
@@ -370,8 +361,46 @@ def add_dental_bill(ma_pdt, pttt, ma_nhan_vien, ghi_chu=None):
         return False
 
 
+def complete_payment(obj):
+    # 1. Tìm hóa đơn
+    hd = HoaDon.query.get(obj['MaHD'])
+
+    # 2. Kiểm tra tồn tại
+    if not hd:
+        print(f"Lỗi: Không tìm thấy hóa đơn có ID {obj['MaHD']}")
+        return False
+
+    # 3. (Tùy chọn) Kiểm tra xem đã thanh toán chưa để tránh trùng lặp
+    # Giả sử enum TrangThaiThanhToan.Da_Thanh_Toan so sánh được
+    if hd.TrangThai == TrangThaiThanhToan.Da_Thanh_Toan:
+        print("Lỗi: Hóa đơn này đã được thanh toán trước đó.")
+        return False
+
+    try:
+        # 4. Cập nhật thông tin
+        hd.PTTT = obj['PTTT']
+        hd.MaNhanVien = obj['MaNhanVien']
+
+        # Cập nhật trạng thái
+        hd.TrangThai = TrangThaiThanhToan.Da_Thanh_Toan
+
+        # QUAN TRỌNG: Cập nhật ngày giờ thanh toán thực tế
+        hd.NgayThanhToan = datetime.now()
+
+        # 5. Lưu vào DB
+        db.session.commit()
+        return True
+
+    except Exception as ex:
+        # 6. Xử lý lỗi
+        db.session.rollback()
+        print(f"Lỗi hệ thống khi thanh toán: {ex}")
+        return False
+
 
 if __name__ == "__main__":
+
     with app.app_context():
         # datetime.now().date()
-        print(search_medicines("parace"))
+
+        complete_payment()

@@ -74,8 +74,29 @@
     </div>
 
     <div class="col-md-7">
-        <h5 style="padding:0.7rem" class="text-center text-primary mb-3"><i class="bi bi-calendar-check"></i> CHỌN GIỜ
-            KHÁM</h5>
+        <div class="d-flex align-items-center justify-content-between mb-4 mt-3">
+
+             <div style="width: 120px;"></div>
+
+            <h5 class="text-primary fw-bold m-0 text-uppercase text-center">
+                <i class="bi bi-calendar-check me-2"></i>Chọn Giờ Khám
+            </h5>
+
+             <div style="width: 120px;">
+
+                {# 1. Kiểm tra đã đăng nhập #}
+                {# 2. Kiểm tra VaiTro.name bằng 'NhanVien' (theo Enum) #}
+                {% if current_user.is_authenticated and current_user.VaiTro.name == 'NhanVien' %}
+
+                <a href="{{ url_for('reception_dashboard', active_tab='appointment') }}"
+                   class="btn btn-outline-primary btn-sm fw-bold shadow-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Quay lại
+                </a>
+
+                {% endif %}
+            </div>
+
+        </div>
 
         <div class="text-center mb-3">
             Khung giờ trống ngày: <span id="displayDate" class="fw-bold"></span><br>

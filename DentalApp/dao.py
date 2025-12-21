@@ -109,7 +109,7 @@ def load_dentist_list():
 def load_waiting_patients(dentist_id):
     return LichHen.query.filter(
         LichHen.MaNhaSi == dentist_id,
-        LichHen.NgayKham == "2025-12-20",
+        LichHen.NgayKham == date.today(),
         LichHen.TrangThai == TrangThaiLichHen.CHO_KHAM
     ).order_by(LichHen.GioKham).all()
 
@@ -139,16 +139,16 @@ def get_appointments_by_dentist_and_date(dentist_id, date):
     )
 
 
-# def search_medicines(keyword):
-#     today = date.today()
-#     keyword = keyword.lower()
-#     return Thuoc.query.filter(
-#         and_(
-#             Thuoc.TenThuoc.contains(keyword),
-#             Thuoc.SoLuongTonKho > 0,
-#             Thuoc.HanSuDung >= today
-#         )
-#     ).all()
+def search_medicines(keyword):
+    today = date.today()
+    keyword = keyword.lower()
+    return Thuoc.query.filter(
+        and_(
+            Thuoc.TenThuoc.contains(keyword),
+            Thuoc.SoLuongTonKho > 0,
+            Thuoc.HanSuDung >= today
+        )
+    ).all()
 
 
 def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines, ma_lich_hen):
@@ -388,7 +388,11 @@ def complete_payment(obj):
         # QUAN TRỌNG: Cập nhật ngày giờ thanh toán thực tế
         hd.NgayThanhToan = datetime.now()
 
-        # 5. Lưu vào DB
+        # if hd.phieudieutri and hd.phieudieutri.lichhen:
+        #     hd.phieudieutri.lichhen.TrangThai = TrangThaiLichHen.HOAN_TAT
+        #     print("ok xong")
+
+        # 6. Lưu vào DB
         db.session.commit()
         return True
 

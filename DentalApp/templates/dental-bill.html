@@ -1,17 +1,20 @@
-{%extends 'layout/base.html'%}
+{% extends 'layout/base.html' %}
+
+{% block title %}Thanh Toán Hóa Đơn #{{ invoice.MaHD }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
- <div class="container mt-4">
-    <div class="card shadow border-0">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>THANH TOÁN HÓA ĐƠN</h5>
-            <a href="{{ url_for('reception_dashboard') }}" class="btn btn-light btn-sm">
-                <i class="fas fa-arrow-left"></i> Quay lại
+    <div class="card shadow border-0" style="max-width: 900px; margin: 0 auto;">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0 fw-bold">
+                <i class="fas fa-file-invoice-dollar me-2"></i>THANH TOÁN HÓA ĐƠN #{{ invoice.MaHD }}
+            </h5>
+            <a href="{{ url_for('reception_dashboard') }}" class="btn btn-light btn-sm text-primary fw-bold">
+                <i class="fas fa-arrow-left me-1"></i> Quay lại
             </a>
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
             {% if invoice %}
 
             <form action="{{ url_for('pay') }}" method="post">
@@ -19,65 +22,82 @@
                 <input type="hidden" name="ma_hd" value="{{ invoice.MaHD }}">
 
                 <div class="row">
-                    <div class="col-md-6 border-end">
-                        <h6 class="text-muted text-uppercase fw-bold mb-3">Thông tin bệnh nhân</h6>
+                    <div class="col-md-6 border-end pe-md-4">
+                        <h6 class="text-primary text-uppercase fw-bold mb-3 border-bottom pb-2">Thông tin khách
+                            hàng</h6>
+
                         <div class="mb-3">
-                            <label class="form-label">Họ tên</label>
-                            <input type="text" class="form-control bg-light" value="{{ invoice.benhnhan.HoTen }}" readonly>
+                            <label class="form-label text-muted small">Họ tên bệnh nhân</label>
+                            <input type="text" class="form-control fw-bold"
+                                   value="{{invoice.phieudieutri.benhnhan.HoTen }}"
+                                   readonly>
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label">Số điện thoại</label>
-                            <input type="text" class="form-control bg-light" value="{{ invoice.benhnhan.SDT }}" readonly>
+                            <label class="form-label text-muted small">Số điện thoại</label>
+                            <input type="text" class="form-control"
+                                   value="{{ invoice.phieudieutri.benhnhan.HoTen }}"
+                                   readonly>
                         </div>
-                        <div class="alert alert-info mt-4">
-                            Hóa đơn lập ngày: <strong>{{ invoice.NgayLap.strftime('%d/%m/%Y') }}</strong>
+
+                        <div class="alert alert-warning d-flex align-items-center mt-4">
+                            <i class="fas fa-calendar-alt me-3 fs-4"></i>
+                            <div>
+                                <small>Ngày tạo hóa đơn:</small><br>
+                                <strong>{{ invoice.NgayLap.strftime('%H:%M - %d/%m/%Y') }}</strong>
+                            </div>
                         </div>
                     </div>
 
                     <div class="col-md-6 ps-md-4">
-                        <h6 class="text-muted text-uppercase fw-bold mb-3">Chi tiết thanh toán</h6>
+                        <h6 class="text-primary text-uppercase fw-bold mb-3 border-bottom pb-2">Chi tiết thanh toán</h6>
 
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="text-muted">Tổng tiền:</span>
-                            <span class="fs-5 fw-bold text-dark">
-                                {{ "{:,.0f}".format(invoice.TongTienDV + invoice.TongTienThuoc) }} đ
-                            </span>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tiền Dịch Vụ:</span>
+                            <span class="fw-bold">{{ "{:,.0f}".format(invoice.TongTienDV) }} đ</span>
                         </div>
-                        <hr>
-                        <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-soft-primary rounded">
-                            <span class="fw-bold text-primary">PHẢI THU:</span>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tiền Thuốc:</span>
+                            <span class="fw-bold">{{ "{:,.0f}".format(invoice.TongTienThuoc) }} đ</span>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded border border-primary border-opacity-25">
+                            <span class="fw-bold text-dark">TỔNG CỘNG:</span>
                             <span class="fs-2 fw-bold text-danger">
                                 {{ "{:,.0f}".format(invoice.TongTienDV + invoice.TongTienThuoc) }} đ
                             </span>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Phương thức thanh toán</label>
-                            <select class="form-select" name="payment_method" required>
-                                <option value="TienMat">Tiền mặt</option>
-                                <option value="ChuyenKhoan">Chuyển khoản / QR Code</option>
-                                <option value="The">Quẹt thẻ</option>
+                            <label class="form-label fw-bold">Hình thức thanh toán <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select form-select-lg" name="payment_method" required>
+                                <option value="TienMat" selected>💵 Tiền mặt</option>
+                                <option value="ChuyenKhoan">🏦 Chuyển khoản (QR Code)</option>
+                                <option value="The">💳 Quẹt thẻ (POS)</option>
                             </select>
                         </div>
 
-                        <div class="d-grid gap-2 mt-5">
+                        <div class="d-grid mt-5">
                             <button type="submit"
-                                    class="btn btn-success btn-lg shadow-sm"
-                                    onclick="return confirm('Bạn có chắc chắn muốn xác nhận thanh toán hóa đơn này không?');">
-                                <i class="fas fa-check-circle me-2"></i> XÁC NHẬN THANH TOÁN
+                                    class="btn btn-success btn-lg py-3 shadow fw-bold text-uppercase"
+                                    onclick="return confirm('Xác nhận bệnh nhân đã thanh toán đủ tiền?');">
+                                <i class="fas fa-check-circle me-2"></i> Xác nhận đã thu tiền
                             </button>
                         </div>
                     </div>
                 </div>
             </form>
+
             {% else %}
-                <p>Không tìm thấy hóa đơn</p>
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <p class="fs-5">Không tìm thấy thông tin hóa đơn.</p>
+            </div>
             {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/dental-bill.js') }}"></script>
 {% endblock %}

@@ -1,12 +1,13 @@
 # index
 from datetime import datetime, time, date
-from flask import render_template, request, redirect, jsonify, url_for, flash, abort
+from flask import render_template, request, redirect, jsonify, url_for, flash, abort, session
 from DentalApp import app, STANDARD_SLOTS, login, db
 import dao
+from DentalApp.dao import benhnhan_da_co_lich_trong_ngay
 from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDieuTri, TrangThaiThanhToan
 from flask_login import login_user, logout_user, login_required, current_user
 
-
+# login -----------------------------------------------------------------
 @app.route('/login', methods=['get', 'post'])
 def login_index():
     err_msg = None
@@ -97,7 +98,7 @@ def logout_my_user():
     logout_user()
     return redirect("/")
 
-
+# Đặt lịch --------------------------------------------------------------------------
 @app.route("/booking")
 @login_required
 def booking():
@@ -192,6 +193,14 @@ def book_appointment():
     #             appt['time'] == new_appointment['time']):
     #         return jsonify({'success': False, 'message': 'Giờ này vừa bị người khác đặt!'})
     #
+    #Chống spam:0
+    da_co = benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
+
+    if da_co:
+        return jsonify({
+            'success': False,
+            'message': 'Bạn đã có lịch trong ngày này rồi!'
+        })
 
     try:
         # Gọi hàm add_booking đã được sửa lại logic (xem bước 4)
@@ -280,20 +289,146 @@ def search_medicines_api():
     return jsonify(result)
 
 
+# Helper để khởi tạo session nếu chưa có
+def get_cart():
+    if 'exam_cart' not in session:
+        session['exam_cart'] = {
+            'patient_id': None,
+            'appointment_id': None,
+            'services': [],  # List dict: {id, name, price, desc}
+            'medicines': []  # List dict: {id, name, unit, price, quantity, usage}
+        }
+    return session['exam_cart']
+
+
+# 1. API Reset Session khi bắt đầu khám bệnh nhân mới
+@app.route('/api/cart/init', methods=['POST'])
+@login_required
+def init_cart_api():
+    data = request.json
+    session['exam_cart'] = {
+        'patient_id': data.get('maBenhNhan'),
+        'appointment_id': data.get('maLichHen'),
+        'services': [],
+        'medicines': []
+    }
+    session.modified = True
+    return jsonify({"success": True})
+
+
+# 2. API Thêm Dịch Vụ vào Session
+@app.route('/api/cart/add-service', methods=['POST'])
+@login_required
+def add_service_to_cart():
+    cart = get_cart()
+    data = request.json  # {id, name, price, desc}
+
+    # Kiểm tra trùng
+    exists = any(s['id'] == data['id'] for s in cart['services'])
+    if exists:
+        return jsonify({"error": "Dịch vụ đã tồn tại"}), 400
+
+    cart['services'].append(data)
+    session.modified = True
+    return jsonify(cart['services'])  # Trả về danh sách mới nhất
+
+
+# 3. API Xóa Dịch Vụ khỏi Session
+@app.route('/api/cart/remove-service', methods=['POST'])
+@login_required
+def remove_service_from_cart():
+    cart = get_cart()
+    service_id = str(request.json.get('id'))
+
+    # Lọc bỏ service có id trùng
+    cart['services'] = [s for s in cart['services'] if str(s['id']) != service_id]
+    session.modified = True
+    return jsonify(cart['services'])
+
+
+# 4. API Thêm Thuốc vào Session (Xử lý cộng dồn số lượng)
+@app.route('/api/cart/add-medicine', methods=['POST'])
+@login_required
+def add_medicine_to_cart():
+    cart = get_cart()
+    data = request.json  # {id, name, unit, price, quantity, usage, stock}
+
+    # Kiểm tra thuốc đã có trong giỏ chưa
+    found = False
+    for item in cart['medicines']:
+        if str(item['id']) == str(data['id']):
+            # Nếu có rồi thì cộng dồn số lượng và cập nhật liều dùng
+            new_qty = item['quantity'] + int(data['quantity'])
+            if new_qty > data['stock']:  # Kiểm tra tồn kho lần nữa phía server
+                return jsonify({"error": f"Vượt quá tồn kho (Tối đa: {data['stock']})"}), 400
+
+            item['quantity'] = new_qty
+            item['usage'] = data['usage']  # Cập nhật liều dùng mới nhất
+            found = True
+            break
+
+    if not found:
+        cart['medicines'].append(data)
+
+    session.modified = True
+    return jsonify(cart['medicines'])
+
+
+# 5. API Xóa Thuốc khỏi Session
+@app.route('/api/cart/remove-medicine', methods=['POST'])
+@login_required
+def remove_medicine_from_cart():
+    cart = get_cart()
+    med_id = str(request.json.get('id'))
+    cart['medicines'] = [m for m in cart['medicines'] if str(m['id']) != med_id]
+    session.modified = True
+    return jsonify(cart['medicines'])
+
+# 7. API Xóa toàn bộ thuốc trong Session (Dùng cho nút Hủy Bỏ)
+@app.route('/api/cart/clear-medicines', methods=['POST'])
+@login_required
+def clear_medicines_cart():
+    cart = get_cart()
+    cart['medicines'] = []  # Reset list thuốc về rỗng
+    session.modified = True # Bắt buộc có để Flask lưu thay đổi
+    return jsonify({"success": True})
+
+# 6. SỬA LẠI API LƯU PHIẾU (Đọc từ Session)
 @app.route('/api/save-examination', methods=['POST'])
 @login_required
 def api_save_examination():
     try:
-        data = request.json
+        data = request.json  # Chỉ chứa chuanDoan, còn lại lấy trong session
+        cart = get_cart()
+
+        # Validate cơ bản
+        if not cart['patient_id']:
+            return jsonify({"success": False, "message": "Phiên làm việc hết hạn hoặc chưa chọn bệnh nhân"}), 400
+
+        if not cart['services']:
+            return jsonify({"success": False, "message": "Chưa chọn dịch vụ nào"}), 400
+
+        # Lấy list ID dịch vụ
+        service_ids = [s['id'] for s in cart['services']]
+
+        # Map lại cấu trúc thuốc cho hàm DAO
+        medicines_payload = [{
+            "maThuoc": m['id'],
+            "soLuong": m['quantity'],
+            "lieuDung": m['lieuDung'] if 'lieuDung' in m else m.get('usage')  # handle naming diff
+        } for m in cart['medicines']]
 
         ma_pdt = dao.save_examination(
-            ma_benh_nhan=data.get('maBenhNhan'),
+            ma_benh_nhan=cart['patient_id'],
             ma_nha_si=current_user.MaNguoiDung,
             chuan_doan=data.get('chuanDoan'),
-            service_ids=data.get('services', []),
-            medicines=data.get('medicines', []),
-            ma_lich_hen=data.get('maLichHen')
+            service_ids=service_ids,
+            medicines=medicines_payload,
+            ma_lich_hen=cart['appointment_id']
         )
+
+        # Lưu xong thì clear session
+        session.pop('exam_cart', None)
 
         return jsonify({
             "success": True,
@@ -302,6 +437,7 @@ def api_save_examination():
 
     except Exception as ex:
         db.session.rollback()
+        print(ex)
         return jsonify({
             "success": False,
             "message": str(ex)

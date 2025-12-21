@@ -1,4 +1,4 @@
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 
 from DentalApp import app, db
 from datetime import datetime, date
@@ -42,9 +42,17 @@ def add_Patient(name, username, password, phone):
 def check_Phone(phone):
     return BenhNhan.query.filter(BenhNhan.SDT == phone).first()
 
+def benhnhan_da_co_lich_trong_ngay(phone, ngay_kham):
+    bn = BenhNhan.query.filter(BenhNhan.SDT == phone).first()
+    return db.session.query(LichHen).filter(
+        LichHen.MaBenhNhan == bn.MaNguoiDung,
+        LichHen.NgayKham == ngay_kham,
+        LichHen.TrangThai != 'Huy'
+    ).first()
 
 def add_booking(obj):
     # 1. Xác định bệnh nhân là ai
+
     patient = None
 
     # TH1: Nếu người dùng đang login là bệnh nhân
@@ -387,10 +395,6 @@ def complete_payment(obj):
 
         # QUAN TRỌNG: Cập nhật ngày giờ thanh toán thực tế
         hd.NgayThanhToan = datetime.now()
-
-        # if hd.phieudieutri and hd.phieudieutri.lichhen:
-        #     hd.phieudieutri.lichhen.TrangThai = TrangThaiLichHen.HOAN_TAT
-        #     print("ok xong")
 
         # 6. Lưu vào DB
         db.session.commit()

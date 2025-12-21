@@ -371,80 +371,81 @@ def cancel_appointment_route():
                             doctor_id=current_doctor,
                             keyword=current_keyword))
 
+#Hóa Đơn --------------------------------------------------------------------------------
 
 @app.route("/dental-bill/<int:ma_lh>")
 def dental_bill(ma_lh):
     invoice = dao.load_invoice(ma_lh)
-    # import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     return render_template("dental-bill.html", invoice=invoice)
 
 
 
-@app.route('/api/get-dental-bill-info/<int:ma_pdt>', methods=['GET'])
-def get_dental_bill_info(ma_pdt):
-    try:
-        # Gọi hàm xử lý dưới DAO
-        data = dao.get_dental_bill_details(ma_pdt)
+# @app.route('/api/get-dental-bill-info/<int:ma_pdt>', methods=['GET'])
+# def get_dental_bill_info(ma_pdt):
+#     try:
+#         # Gọi hàm xử lý dưới DAO
+#         data = dao.get_dental_bill_details(ma_pdt)
+#
+#         if not data:
+#             return jsonify({'success': False, 'message': 'Không tìm thấy phiếu điều trị'}), 404
+#
+#         # Lấy data
+#         tien_kham = data['tien_kham']
+#         tien_thuoc = data['tien_thuoc']
+#         vat = data['vat']
+#         tong_tien = data['tong_tien']
+#
+#         return jsonify({
+#             'success': True,
+#             'ho_ten': data['ho_ten'],
+#             'tien_kham': tien_kham,
+#             'tien_thuoc': tien_thuoc,
+#             'vat': vat,
+#             'tong_tien': tong_tien
+#         })
+#
+#     except Exception as e:
+#         print(f"Lỗi tính hóa đơn: {str(e)}")
+#         return jsonify({'success': False, 'message': 'Lỗi hệ thống'}), 500
 
-        if not data:
-            return jsonify({'success': False, 'message': 'Không tìm thấy phiếu điều trị'}), 404
 
-        # Lấy data
-        tien_kham = data['tien_kham']
-        tien_thuoc = data['tien_thuoc']
-        vat = data['vat']
-        tong_tien = data['tong_tien']
-
-        return jsonify({
-            'success': True,
-            'ho_ten': data['ho_ten'],
-            'tien_kham': tien_kham,
-            'tien_thuoc': tien_thuoc,
-            'vat': vat,
-            'tong_tien': tong_tien
-        })
-
-    except Exception as e:
-        print(f"Lỗi tính hóa đơn: {str(e)}")
-        return jsonify({'success': False, 'message': 'Lỗi hệ thống'}), 500
-
-
-@app.route('/api/pay', methods=['POST'])
+@app.route('/api-pay', methods=["POST"])
 @login_required  # Bắt buộc đăng nhập mới được thanh toán
 def pay():
-    data = request.json
+    # 1. Lấy dữ liệu từ Form HTML gửi lên
+    ma_hd = request.form.get('ma_hd')
+    pttt = request.form.get('payment_method')
 
+    # Validate cơ bản
+    if not ma_hd or not pttt:
+        flash('Lỗi: Thiếu thông tin thanh toán.', 'danger')
+        return redirect(url_for('reception_dashboard'))
+
+    # 2. Tạo object dữ liệu
     payment_info = {
-        'MaHD': data.get('MaHD'),
-        'PTTT': data.get('PTTT'),
-        'MaNhanVien': current_user.MaNguoiDung
+        'MaHD': ma_hd,
+        'PTTT': pttt,
+        'MaNhanVien': current_user.MaNguoiDung if current_user.is_authenticated else None
     }
 
     try:
-        # 4. Thực thi logic nghiệp vụ
-        # Giả sử dao.complete_payment trả về True/False hoặc raise Exception
+        # 3. Gọi DAO để xử lý database
         is_success = dao.complete_payment(payment_info)
 
         if is_success:
-            return jsonify({
-                'success': True,
-                'message': 'Thanh toán hóa đơn thành công!'
-            }), 200
+            # Gửi thông báo thành công
+            flash('Đã thanh toán hóa đơn thành công!', 'success')
         else:
-            return jsonify({
-                'success': False,
-                'message': 'Không thể thanh toán. Hóa đơn có thể đã hoàn tất hoặc bị hủy.'
-            }), 400
+            # Gửi thông báo thất bại
+            flash('Thanh toán thất bại! Hóa đơn có thể đã đóng hoặc lỗi hệ thống.', 'danger')
 
     except Exception as e:
-        # Nên dùng logging thay vì print trong môi trường production
-        import traceback
-        traceback.print_exc()
+        print(f"Lỗi thanh toán: {e}")
+        flash('Lỗi hệ thống khi xử lý thanh toán.', 'danger')
 
-        return jsonify({
-            'success': False,
-            'message': f'Lỗi hệ thống: {str(e)}'
-        }), 500
+    # 4. Quay về Dashboard
+    return redirect(url_for('reception_dashboard'))
 
 
 if __name__ == "__main__":

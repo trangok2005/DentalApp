@@ -1,0 +1,65 @@
+[
+  {
+    "HoTen": "Nguyễn Văn An",
+    "TaiKhoan": "bn_an",
+    "MatKhau": "202cb962ac59075b964b07152d234b70",
+    "SDT": "0901000001",
+    "NgaySinh": "2000-05-10",
+    "DiaChi": "Quận 1, TP.HCM",
+    "TienSuBenh": "Không"
+  },
+  {
+    "HoTen": "Trần Thị Bích",
+    "TaiKhoan": "bn_bich",
+    "MatKhau": "202cb962ac59075b964b07152d234b70",
+    "SDT": "0901000002",
+    "NgaySinh": "1998-08-21",
+    "DiaChi": "Quận 3, TP.HCM",
+    "TienSuBenh": "Dị ứng thuốc tê"
+  },
+  {
+    "HoTen": "Lê Hoàng Nam",
+    "TaiKhoan": "bn_nam",
+    "MatKhau": "202cb962ac59075b964b07152d234b70",
+    "SDT": "0901000003",
+    "NgaySinh": "1995-12-02",
+    "DiaChi": "Quận 7, TP.HCM",
+    "TienSuBenh": "Cao huyết áp nhẹ"
+  },
+  {
+    "HoTen": "Phạm Minh Thu",
+    "TaiKhoan": "bn_thu",
+    "MatKhau": "202cb962ac59075b964b07152d234b70",
+    "SDT": "0901000004",
+    "NgaySinh": "2001-03-18",
+    "DiaChi": "Thủ Đức, TP.HCM",
+    "TienSuBenh": "Không"
+  },
+  {
+    "HoTen": "Võ Thanh Tùng",
+    "TaiKhoan": "bn_tung",
+    "MatKhau": "202cb962ac59075b964b07152d234b70",
+    "SDT": "0901000005",
+    "NgaySinh": "1990-07-25",
+    "DiaChi": "Quận 10, TP.HCM",
+    "TienSuBenh": "Tiểu đường type 2"
+  },
+  {
+    "HoTen": "Đặng Thị Mai",
+    "TaiKhoan": "bn_mai",
+    "MatKhau": "202cb962ac59075b964b07152d234b70",
+    "SDT": "0901000006",
+    "NgaySinh": "1997-11-09",
+    "DiaChi": "Quận Bình Thạnh, TP.HCM",
+    "TienSuBenh": "Viêm lợi mãn tính"
+  },
+  {
+    "HoTen": "Huỳnh Quốc Huy",
+    "TaiKhoan": "bn_huy",
+    "MatKhau": "202cb962ac59075b964b07152d234b70",
+    "SDT": "0901000007",
+    "NgaySinh": "2003-01-30",
+    "DiaChi": "Quận Tân Bình, TP.HCM",
+    "TienSuBenh": "Không"
+  }
+]

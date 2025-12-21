@@ -225,25 +225,30 @@ class HoaDon(db.Model):
 #
 if __name__ == "__main__":
     with app.app_context():
-
-        db.create_all()
-        # bn1 =BenhNhan(
-        #     HoTen="Nguyễn Văn A",
-        #     SDT="0909123456",
-        #     TaiKhoan="tvt",
-        #     MatKhau="6512bd43d9caa6e02c990b0a82652dca",#123
-        #     NgaySinh=date(1990, 5, 15),
-        #     DiaChi="123 Lê Lợi, Q1, TP.HCM",
-        #     TienSuBenh="Dị ứng thuốc tê nhẹ"
-        # )
+        print(db.session.query(Thuoc).first())
+        # db.create_all()
         # lt1 = NhanVien(
         #     HoTen="Lê Thị Hạnh",
-        #     TaiKhoan="letan01",
-        #     MatKhau="6512bd43d9caa6e02c990b0a82652dca",
+        #     TaiKhoan="nv01",
+        #     MatKhau="202cb962ac59075b964b07152d234b70"
         # )
         #
+        # ql1 = QuanLy(
+        #     HoTen="Lê Thị Diễm",
+        #     TaiKhoan="ql01",
+        #     MatKhau="202cb962ac59075b964b07152d234b70"
+        # )
         #
-        # db.session.add_all([bn1,lt1])
+        # db.session.add_all([ql1 , lt1])
+        # db.session.commit()
+        #
+        # with open("data/BenhNhan.json", encoding="utf-8") as f:
+        #     Patients = json.load(f)
+        #
+        #     for p in Patients:
+        #         pa = BenhNhan(**p)
+        #         db.session.add(pa)
+        #
         # db.session.commit()
         #
         # with open("data/NhaSi.json", encoding="utf-8") as f:
@@ -252,16 +257,6 @@ if __name__ == "__main__":
         #     for d in dentists:
         #         den = NhaSi(**d)
         #         db.session.add(den)
-        #
-        # db.session.commit()
-        #
-        #
-        # with open("data/LichKham.json", encoding="utf-8") as f:
-        #     appointments = json.load(f)
-        #
-        #     for item in appointments:
-        #         appt = LichHen(**item)
-        #         db.session.add(appt)
         #
         # db.session.commit()
         #
@@ -282,5 +277,20 @@ if __name__ == "__main__":
         #         db.session.add(me)
         #
         # db.session.commit()
+        # with open("data/LichKham.json", encoding="utf-8") as f:
+        #     lks = json.load(f)
+        #     for i in lks:
+        #         lh = LichHen(
+        #             NgayKham=date.today(),
+        #             GioKham=i['GioKham'],
+        #             GhiChu=i["GhiChu"],
+        #             MaNhaSi=i["MaNhaSi"],
+        #             MaBenhNhan=i["MaBenhNhan"]
+        #         )
+        #         db.session.add(lh)
+        #
+        # db.session.commit()
+
+
 
 

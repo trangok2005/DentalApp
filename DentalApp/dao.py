@@ -109,7 +109,7 @@ def load_dentist_list():
 def load_waiting_patients(dentist_id):
     return LichHen.query.filter(
         LichHen.MaNhaSi == dentist_id,
-        LichHen.NgayKham == "2025-12-20",
+        LichHen.NgayKham == date.today(),
         LichHen.TrangThai == TrangThaiLichHen.CHO_KHAM
     ).order_by(LichHen.GioKham).all()
 

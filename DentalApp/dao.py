@@ -4,7 +4,7 @@ from DentalApp import app, db
 from datetime import datetime, date
 import hashlib
 from flask_login import login_user, logout_user, login_required, current_user
-
+from sqlalchemy import func, extract
 
 from models import (NguoiDung, NhanVien, UserRole, NhaSi, DichVu, LichHen, BenhNhan, Thuoc,
                     PhieuDieuTriDichVu, PhieuDieuTri, DonThuoc, ChiTietDonThuoc, TrangThaiLichHen, HoaDon, TrangThaiThanhToan)
@@ -29,6 +29,8 @@ def auth_user(username, password, role_from_html):
 
     elif role_from_html == 'nhanvien':
         return user if user.VaiTro == UserRole.NhanVien else None
+    elif role_from_html == 'quanly':
+        return user if user.VaiTro == UserRole.QuanLy else None
     return None
 
 
@@ -398,6 +400,47 @@ def complete_payment(obj):
         print(f"Lỗi hệ thống khi thanh toán: {ex}")
         return False
 
+
+def get_revenue_by_month(year):
+    # Truy vấn: Nhóm theo tháng, tính tổng (Tiền Dịch vụ + Tiền Thuốc + VAT)
+    # Lưu ý: VAT trong model bạn để là số tiền, nên cộng trực tiếp
+    result = db.session.query(
+        func.extract('month', HoaDon.NgayLap),
+        func.sum(HoaDon.TongTienDV + HoaDon.TongTienThuoc + HoaDon.VAT)
+    ).filter(
+        func.extract('year', HoaDon.NgayLap) == year,
+        HoaDon.TrangThai == 'DaThanhToan'  # Chỉ tính hóa đơn đã thanh toán
+    ).group_by(
+        func.extract('month', HoaDon.NgayLap)
+    ).order_by(
+        func.extract('month', HoaDon.NgayLap)
+    ).all()
+
+    return result
+
+
+def get_revenue_by_dentist(month, year):
+    # Truy vấn: Join Hóa Đơn -> Phiếu Điều Trị -> Nha Sĩ
+    # Nhóm theo Tên Nha Sĩ, tính tổng doanh thu
+
+    query = db.session.query(
+        NhaSi.HoTen,
+        func.sum(HoaDon.TongTienDV + HoaDon.TongTienThuoc + HoaDon.VAT)
+    ).join(
+        PhieuDieuTri, PhieuDieuTri.MaPDT == HoaDon.MaPDT
+    ).join(
+        NhaSi, NhaSi.MaNguoiDung == PhieuDieuTri.MaNhaSi
+    ).filter(
+        func.extract('year', HoaDon.NgayLap) == year,
+        HoaDon.TrangThai == 'DaThanhToan'
+    )
+
+    # Nếu có chọn tháng thì lọc thêm tháng
+    if month:
+        query = query.filter(func.extract('month', HoaDon.NgayLap) == month)
+
+    result = query.group_by(NhaSi.MaNguoiDung).all()
+    return result
 
 if __name__ == "__main__":
 

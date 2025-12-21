@@ -2,11 +2,10 @@
 
 {% block content %}
 <div class="container mt-4">
+ <div class="container mt-4">
     <div class="card shadow border-0">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-file-invoice-dollar me-2"></i>THANH TOÁN HÓA ĐƠN
-            </h5>
+            <h5 class="mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>THANH TOÁN HÓA ĐƠN</h5>
             <a href="{{ url_for('reception_dashboard') }}" class="btn btn-light btn-sm">
                 <i class="fas fa-arrow-left"></i> Quay lại
             </a>
@@ -14,36 +13,24 @@
 
         <div class="card-body">
             {% if invoice %}
-            <form dataset-HD= invoice.MaHd action="" method="post">
 
-                <input type="hidden" name="ma_hd" id="ma_hd" value="{{ invoice.MaHD }}">
+            <form action="{{ url_for('pay') }}" method="post">
+
+                <input type="hidden" name="ma_hd" value="{{ invoice.MaHD }}">
 
                 <div class="row">
                     <div class="col-md-6 border-end">
                         <h6 class="text-muted text-uppercase fw-bold mb-3">Thông tin bệnh nhân</h6>
-
                         <div class="mb-3">
                             <label class="form-label">Họ tên</label>
-                            <input type="text" class="form-control bg-light"
-                                   value="{{ invoice.benhnhan.HoTen }}" readonly>
+                            <input type="text" class="form-control bg-light" value="{{ invoice.benhnhan.HoTen }}" readonly>
                         </div>
-
                         <div class="mb-3">
                             <label class="form-label">Số điện thoại</label>
-                            <input type="text" class="form-control bg-light"
-                                   value="{{ invoice.benhnhan.SDT }}" readonly>
+                            <input type="text" class="form-control bg-light" value="{{ invoice.benhnhan.SDT }}" readonly>
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Bác sĩ điều trị</label>
-                            <input type="text" class="form-control bg-light"
-                                   value="{{ invoice.phieudieutri.nhasi.HoTen if invoice.phieudieutri else '---' }}"
-                                   readonly>
-                        </div>
-
                         <div class="alert alert-info mt-4">
-                            <i class="fas fa-info-circle"></i>
-                            Hóa đơn được lập ngày: <strong>{{ invoice.NgayLap.strftime('%d/%m/%Y') }}</strong>
+                            Hóa đơn lập ngày: <strong>{{ invoice.NgayLap.strftime('%d/%m/%Y') }}</strong>
                         </div>
                     </div>
 
@@ -51,23 +38,14 @@
                         <h6 class="text-muted text-uppercase fw-bold mb-3">Chi tiết thanh toán</h6>
 
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="text-muted">Tổng tiền Dịch vụ:</span>
+                            <span class="text-muted">Tổng tiền:</span>
                             <span class="fs-5 fw-bold text-dark">
-                                {{ "{:,.0f}".format(invoice.TongTienDV) }} đ
+                                {{ "{:,.0f}".format(invoice.TongTienDV + invoice.TongTienThuoc) }} đ
                             </span>
                         </div>
-
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="text-muted">Tổng tiền Thuốc:</span>
-                            <span class="fs-5 fw-bold text-dark">
-                                {{ "{:,.0f}".format(invoice.TongTienThuoc) }} đ
-                            </span>
-                        </div>
-
                         <hr>
-
                         <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-soft-primary rounded">
-                            <span class="fw-bold text-primary">TỔNG CỘNG PHẢI THU:</span>
+                            <span class="fw-bold text-primary">PHẢI THU:</span>
                             <span class="fs-2 fw-bold text-danger">
                                 {{ "{:,.0f}".format(invoice.TongTienDV + invoice.TongTienThuoc) }} đ
                             </span>
@@ -75,32 +53,31 @@
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Phương thức thanh toán</label>
-                            <select class="form-select" name="payment_method" id="payment_method">
+                            <select class="form-select" name="payment_method" required>
                                 <option value="TienMat">Tiền mặt</option>
                                 <option value="ChuyenKhoan">Chuyển khoản / QR Code</option>
                                 <option value="The">Quẹt thẻ</option>
                             </select>
-
-                            <div class="d-grid gap-2 mt-5">
-                                <button type="submit" class="btn btn-success btn-lg shadow-sm " id="btn-pay-bill">
-                                    <i class="fas fa-check-circle me-2"></i> XÁC NHẬN THANH TOÁN
-                                </button>
-                            </div>
                         </div>
 
-
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit"
+                                    class="btn btn-success btn-lg shadow-sm"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xác nhận thanh toán hóa đơn này không?');">
+                                <i class="fas fa-check-circle me-2"></i> XÁC NHẬN THANH TOÁN
+                            </button>
+                        </div>
                     </div>
                 </div>
             </form>
             {% else %}
-            <div class="text-center py-5">
-                <img src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" width="100" class="mb-3 opacity-50">
-                <h4 class="text-muted">Không tìm thấy thông tin hóa đơn</h4>
-                <p>Vui lòng kiểm tra lại trạng thái lịch hẹn.</p>
-                <a href="{{ url_for('reception_dashboard') }}" class="btn btn-outline-primary">Quay lại Dashboard</a>
-            </div>
+                <p>Không tìm thấy hóa đơn</p>
             {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dental-bill.js') }}"></script>
 {% endblock %}

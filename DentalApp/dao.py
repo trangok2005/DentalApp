@@ -139,16 +139,16 @@ def get_appointments_by_dentist_and_date(dentist_id, date):
     )
 
 
-def search_medicines(keyword):
-    today = date.today()
-    keyword = keyword.lower()
-    return Thuoc.query.filter(
-        and_(
-            Thuoc.TenThuoc.contains(keyword),
-            Thuoc.SoLuongTonKho > 0,
-            Thuoc.HanSuDung >= today
-        )
-    ).all()
+# def search_medicines(keyword):
+#     today = date.today()
+#     keyword = keyword.lower()
+#     return Thuoc.query.filter(
+#         and_(
+#             Thuoc.TenThuoc.contains(keyword),
+#             Thuoc.SoLuongTonKho > 0,
+#             Thuoc.HanSuDung >= today
+#         )
+#     ).all()
 
 
 def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines, ma_lich_hen):
@@ -258,6 +258,7 @@ def load_invoice(ma_lh: int):
         NgayLap=lh.NgayKham,
         MaNhaSi=lh.MaNhaSi
     ).first()
+    print(pdt)
 
     if not pdt:
         return None
@@ -317,48 +318,48 @@ def load_invoice(ma_lh: int):
 #     }
 
 
-def add_dental_bill(ma_pdt, pttt, ma_nhan_vien, ghi_chu=None):
-    # Lấy thông tin phiếu để tính toán lại (Backend phải tự tính, không tin tưởng số liệu từ Frontend gửi về)
-    pdt = PhieuDieuTri.query.get(ma_pdt)
-    if not pdt:
-        return False
-
-    # Tính tiền dịch vụ
-    tong_tien_dv = 0
-    for dv in pdt.dichvus:
-        tong_tien_dv += float(dv.DonGia)
-
-    # Tính tiền thuốc
-    tong_tien_thuoc = 0
-    if pdt.donthuoc:
-        for ct in pdt.donthuoc.chitiet:
-            tong_tien_thuoc += float(ct.thuoc.DonGia) * ct.SoLuong
-
-    # Tính VAT (10%)
-    # Lưu ý: Trong models.py bạn khai báo VAT là Numeric(tiền), không phải %
-    vat = (tong_tien_dv + tong_tien_thuoc) * 0.1
-
-    # Tạo đối tượng Hóa Đơn
-    hd = HoaDon(
-        MaPDT=ma_pdt,
-        MaBenhNhan=pdt.MaBenhNhan,  # Lấy mã bệnh nhân từ phiếu điều trị
-        NgayLap=date.today(),
-        TongTienDV=tong_tien_dv,
-        TongTienThuoc=tong_tien_thuoc,
-        VAT=vat,
-        PTTT=pttt,  # Phương thức thanh toán (Tiền mặt/Chuyển khoản)
-        TrangThai="DaThanhToan",
-        MaNhanVien = ma_nhan_vien
-    )
-
-    try:
-        db.session.add(hd)
-        db.session.commit()
-        return True
-    except Exception as ex:
-        print(f"Lỗi lưu hóa đơn: {str(ex)}")
-        db.session.rollback()
-        return False
+# def add_dental_bill(ma_pdt, pttt, ma_nhan_vien, ghi_chu=None):
+#     # Lấy thông tin phiếu để tính toán lại (Backend phải tự tính, không tin tưởng số liệu từ Frontend gửi về)
+#     pdt = PhieuDieuTri.query.get(ma_pdt)
+#     if not pdt:
+#         return False
+#
+#     # Tính tiền dịch vụ
+#     tong_tien_dv = 0
+#     for dv in pdt.dichvus:
+#         tong_tien_dv += float(dv.DonGia)
+#
+#     # Tính tiền thuốc
+#     tong_tien_thuoc = 0
+#     if pdt.donthuoc:
+#         for ct in pdt.donthuoc.chitiet:
+#             tong_tien_thuoc += float(ct.thuoc.DonGia) * ct.SoLuong
+#
+#     # Tính VAT (10%)
+#     # Lưu ý: Trong models.py bạn khai báo VAT là Numeric(tiền), không phải %
+#     vat = (tong_tien_dv + tong_tien_thuoc) * 0.1
+#
+#     # Tạo đối tượng Hóa Đơn
+#     hd = HoaDon(
+#         MaPDT=ma_pdt,
+#         MaBenhNhan=pdt.MaBenhNhan,  # Lấy mã bệnh nhân từ phiếu điều trị
+#         NgayLap=date.today(),
+#         TongTienDV=tong_tien_dv,
+#         TongTienThuoc=tong_tien_thuoc,
+#         VAT=vat,
+#         PTTT=pttt,  # Phương thức thanh toán (Tiền mặt/Chuyển khoản)
+#         TrangThai="DaThanhToan",
+#         MaNhanVien = ma_nhan_vien
+#     )
+#
+#     try:
+#         db.session.add(hd)
+#         db.session.commit()
+#         return True
+#     except Exception as ex:
+#         print(f"Lỗi lưu hóa đơn: {str(ex)}")
+#         db.session.rollback()
+#         return False
 
 
 def complete_payment(obj):
@@ -403,4 +404,4 @@ if __name__ == "__main__":
     with app.app_context():
         # datetime.now().date()
 
-        complete_payment()
+        print(load_invoice(9))

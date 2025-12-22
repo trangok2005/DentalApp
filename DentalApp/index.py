@@ -1,4 +1,5 @@
 # index
+import re
 from datetime import datetime, time, date
 from flask import render_template, request, redirect, jsonify, url_for, flash, abort, session
 from DentalApp import app, STANDARD_SLOTS, login, db
@@ -22,8 +23,8 @@ def login_index():
 
         user = dao.auth_user(username, password, role)
 
-        print(username, password)
-        #         # Ktraeo vai trò
+        #print(username, password)
+        # Ktra vai trò
         if user:
             login_user(user)
             if user.VaiTro == UserRole.BenhNhan:
@@ -52,7 +53,12 @@ def register_index():
         confirm = request.form.get("confirm")
         phone = request.form.get("phone")
 
-        if password != confirm:
+        phone_pattern = r"^(0|\+84)(3|5|7|8|9)[0-9]{8}$"
+
+        # 3. Thực hiện kiểm tra
+        if not re.fullmatch(phone_pattern, phone):
+            register_error = "Số điện thoại không hợp lệ"
+        elif password != confirm:
             register_error = "Mật khẩu không khớp!"
         elif dao.check_Phone(phone):
             register_error = "Số điện thoại đã được đăng ký"
@@ -121,7 +127,7 @@ def get_slots():
 
     # Lấy danh sách giờ đã đặt
     booked_slots = [appt.GioKham.strftime("%H:%M") for appt in booked]
-    print(booked_slots)
+    #print(booked_slots)
 
     total_booked = len(booked_slots)
 
@@ -194,6 +200,7 @@ def book_appointment():
     #         return jsonify({'success': False, 'message': 'Giờ này vừa bị người khác đặt!'})
     #
     #Chống spam:0
+
     da_co = benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
 
     if da_co:
@@ -207,6 +214,8 @@ def book_appointment():
         result = dao.add_booking(data)
 
         if result:
+            # giả lập gửi SMS
+            print(f">> SMS gửi đến {new_appointment['phone']}: Đặt lịch thành công lúc {new_appointment['time']}!")
             return jsonify({'success': True, 'message': 'Đặt lịch thành công!'})
         else:
             return jsonify({'success': False, 'message': 'Không thể tạo lịch hẹn!'})
@@ -215,10 +224,7 @@ def book_appointment():
         print(ex)
         return jsonify({'success': False, 'message': 'Loi he thong!'})
 
-    #Giả lập gửi SMS
-    print(f">> SMS gửi đến {new_appointment['phone']}: Đặt lịch thành công lúc {new_appointment['time']}!")
 
-    return jsonify({'success': True, 'message': 'Đặt lịch thành công!'})
 
 # Nha sĩ ------------------------------------------------------------------------
 @app.route('/medical-record', methods=['get', 'post'])
@@ -237,7 +243,7 @@ def api_patient_queue():
         now_time = datetime.now().time()
 
         lichhens = dao.load_waiting_patients(current_user.MaNguoiDung)
-        print(lichhens)
+        #print(lichhens)
         result = []
         for lh in lichhens:
             result.append({
@@ -592,5 +598,5 @@ def pay():
 
 if __name__ == "__main__":
     with app.app_context():
-        print(dao.get_patient_info(1))
+       # print(dao.get_patient_info(1))
         app.run(debug=True)

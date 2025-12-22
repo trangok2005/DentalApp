@@ -1,4 +1,3 @@
-
 const dentistSelect = document.getElementById('dentistSelect');
 const dateInput = document.getElementById('dateInput');
 const slotsTableBody = document.getElementById('slotsTableBody');
@@ -27,7 +26,7 @@ async function loadSlots() {
 
     // Xóa bảng cũ
     slotsTableBody.innerHTML = '';
-    selectedTimeInput.value = ''; // Reset ô giờ chọn
+    //selectedTimeInput.value = ''; // Reset ô giờ chọn
 
     if (data.status === 'full') {
         statusText.innerText = `${data.booked_count}/5 ca đã đặt (Full)`;
@@ -70,10 +69,12 @@ async function loadSlots() {
 
 //ktra user đã tồn tại khi dăt lich hộ
 document.getElementById('patientPhone').addEventListener('blur', async function() {
-    // 1. Check quyền: Nếu không phải staff thì dừng ngay
+    const feedback = document.getElementById('phoneFeedback');
+    // Check quyền: Nếu không phải staff thì dừng ngay
     const isStaff = this.getAttribute('data-is-staff') === 'true';
-    if (!isStaff) return;
+    if (!isStaff) return
 
+    //ktra số
     const phone = this.value;
     if (phone.length < 9) return;
 
@@ -84,12 +85,9 @@ document.getElementById('patientPhone').addEventListener('blur', async function(
             body: JSON.stringify({ phone: phone })
         });
 
-        if (!response.ok) throw new Error('Network error');
-
         const data = await response.json();
-
         const nameInput = document.getElementById('patientName');
-        const feedback = document.getElementById('phoneFeedback');
+
 
         if (data.found) {
             nameInput.value = data.name;
@@ -109,44 +107,55 @@ dateInput.addEventListener('change', loadSlots);
 
 // STT 8: Xử lý nút Xác nhận
 document.getElementById('btnConfirm').addEventListener('click', async () => {
-const time = selectedTimeInput.value;
-const name = document.getElementById('patientName').value;
-const phone = document.getElementById('patientPhone').value;
-const note = document.getElementById('patientNote').value;
+    const time = selectedTimeInput.value;
+    const name = document.getElementById('patientName').value;
+    const phone = document.getElementById('patientPhone').value;
+    const note = document.getElementById('patientNote').value;
 
-if (!time || !name || !phone || !note) {
-    alert('Vui lòng điền đầy đủ thông tin và chọn giờ khám!');
-    return;
-}
-//gui
-const res = await fetch('/api/book', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-    dentist_id: document.getElementById('dentistSelect').value,
-    date: document.getElementById('dateInput').value,
-    time: selectedTimeInput.value,
-    phone: document.getElementById('patientPhone').value,
-    name: document.getElementById('patientName').value,
-    patientNote: document.getElementById('patientNote').value
-  })
-});
-//nhan
-const result = await res.json();
-alert(result.message);
 
-if (result.success) {
-    loadSlots(); // Reload lại bảng
-    document.getElementById('bookingForm').reset();//  reset form nhập liệu
-    dateInput.value = new Date().toISOString().split('T')[0];
-}
+
+
+    if (!time || !name || !phone || !note) {
+        alert('Vui lòng điền đầy đủ thông tin và chọn giờ khám!');
+        return;
+    }
+    regex = /^(0|\+84)[0-9]{9}$/;
+    if (!regex.test(phone)) {
+        alert('Số điện thoại không đúng định dạng!');
+        document.getElementById('patientPhone').focus();
+        return;
+    }
+    //gui
+    const res = await fetch('/api/book', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            dentist_id: document.getElementById('dentistSelect').value,
+            date: document.getElementById('dateInput').value,
+            time: selectedTimeInput.value,
+            phone: document.getElementById('patientPhone').value,
+            name: document.getElementById('patientName').value,
+            patientNote: document.getElementById('patientNote').value
+      })
+    });
+    //nhan
+    const result = await res.json();
+    alert(result.message);
+
+    if (result.success) {
+        loadSlots(); // Reload lại bảng
+        document.getElementById('bookingForm').reset();//  reset form nhập liệu
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
 });
 
 // STT 9: Nút Hủy (Reset form)
 document.getElementById('btnCancel').addEventListener('click', () => {
-document.getElementById('bookingForm').reset();
-// Reset lại ngày về hôm nay vì form reset sẽ xóa hết
-dateInput.value = new Date().toISOString().split('T')[0];
-loadSlots();
+    document.getElementById('bookingForm').reset();
+    // Reset lại ngày
+    dateInput.value = new Date().toISOString().split('T')[0];
+    //
+    slotsTableBody.innerHTML = '';
+
 });
 

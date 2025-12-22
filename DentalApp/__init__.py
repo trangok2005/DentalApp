@@ -23,3 +23,4 @@ login = LoginManager(app)
 
 #VAT
 VAT = 0.1
+

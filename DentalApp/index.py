@@ -35,8 +35,8 @@ def login_index():
 
             elif user.VaiTro == UserRole.NhanVien:
                 return redirect("/reception/dashboard")
-            #     elif nv.BoPhan == BoPhanEnum.QuanLy:
-            #         return redirect("/")
+            elif user.VaiTro == UserRole.QuanLy:
+                return redirect("/report-stats")
 
         # Nếu sai bất kỳ bước nào
         err_msg = "Sai thông tin đăng nhập hoặc vai trò không đúng!"
@@ -595,6 +595,58 @@ def pay():
     # 4. Quay về Dashboard
     return redirect(url_for('reception_dashboard'))
 
+
+@app.route("/report-stats")
+@login_required
+def report_stats():
+    # Bảo vệ: Chỉ Quản lý mới được vào
+    # if current_user.VaiTro != UserRole.QuanLy or \
+    #         (isinstance(current_user, NhanVien) and current_user.BoPhan != UserRole.QuanLy):
+    if current_user.VaiTro != UserRole.QuanLy:
+        return render_template("index.html", error="Bạn không có quyền truy cập trang này!")
+
+    return render_template("report.html")
+
+
+@app.route("/api/revenue-stats", methods=['POST'])
+@login_required
+def api_revenue_stats():
+    data = request.json
+    criteria = data.get('criteria')  # 'month' hoặc 'dentist'
+    year = data.get('year', datetime.now().year)
+    month = data.get('month')  # Có thể null
+
+    chart_data = {
+        'labels': [],
+        'data': []
+    }
+
+    try:
+        if criteria == 'month':
+            # Thống kê theo 12 tháng trong năm
+            stats = dao.get_revenue_by_month(year)
+            print(">>> DATA THỐNG KÊ:", stats)
+
+            # Tạo mảng 12 tháng mặc định là 0
+            monthly_data = {i: 0 for i in range(1, 13)}
+            for s in stats:
+                monthly_data[int(s[0])] = float(s[1])  # s[0] là tháng, s[1] là tổng tiền
+
+            chart_data['labels'] = [f"Tháng {i}" for i in range(1, 13)]
+            chart_data['data'] = list(monthly_data.values())
+
+        elif criteria == 'dentist':
+            # Thống kê theo bác sĩ
+            stats = dao.get_revenue_by_dentist(month, year)
+            for s in stats:
+                chart_data['labels'].append(s[0])  # Tên bác sĩ
+                chart_data['data'].append(float(s[1]))  # Tổng tiền
+
+        return jsonify({'success': True, 'chartData': chart_data})
+
+    except Exception as ex:
+        print(ex)
+        return jsonify({'success': False, 'message': str(ex)})
 
 if __name__ == "__main__":
     with app.app_context():

@@ -27,6 +27,9 @@ class TrangThaiThanhToan(enum.Enum):
     Da_Thanh_Toan = "DaThanhToan"
     Chua_Thanh_Toan = "ChuaThanhToan"
 
+    def __str__(self):
+        return self.value
+
 
 # --- Bảng Người Dùng (Base) ---
 class NguoiDung(db.Model, UserMixin):
@@ -122,7 +125,7 @@ class LichHen(db.Model):
         Logic: Tìm Phiếu điều trị của Bệnh nhân này vào Ngày khám này.
         """
         # Import cục bộ để tránh lỗi circular import
-        from models import PhieuDieuTri, HoaDon
+        #from models import PhieuDieuTri, HoaDon
 
         # 1. Tìm phiếu điều trị khớp User và Ngày
         pdt = PhieuDieuTri.query.filter_by(
@@ -216,7 +219,7 @@ class HoaDon(db.Model):
     # VAT có thể là Float vì là % nhưng tiền phải là Numeric. Ở đây để đơn giản lưu tiền VAT
     VAT = Column(Numeric(12, 0), default=VAT)
     PTTT = Column(String(50))  # Phương thức thanh toán
-    TrangThai = Column(String(50), default=TrangThaiThanhToan.Chua_Thanh_Toan)
+    TrangThai = Column(String(50), default=TrangThaiThanhToan.Chua_Thanh_Toan.value)
     NgayThanhToan = Column(DateTime)
 
     MaBenhNhan = Column(Integer, ForeignKey('benhnhan.MaNguoiDung'))

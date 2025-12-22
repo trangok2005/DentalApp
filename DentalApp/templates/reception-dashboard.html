@@ -88,7 +88,8 @@ Quản Lý Lịch Hẹn | Phòng Khám Nha Khoa
         <div class="card-body p-0">
             <div class="tab-content" id="dashboardTabsContent">
 
-                <div class="tab-pane fade show active {% if active_tab == 'payment' %}show active{% endif %}" id="appointment-pane" role="tabpanel">
+                <div class="tab-pane fade show active {% if active_tab == 'payment' %}show active{% endif %}"
+                     id="appointment-pane" role="tabpanel">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light">
@@ -221,9 +222,9 @@ Quản Lý Lịch Hẹn | Phòng Khám Nha Khoa
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
 
-    {% endblock %}
-
-    {% block scripts %}
-    <script src="{{ url_for('static', filename='js/reception-dashboard.js') }}"></script>
-    {% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/reception-dashboard.js') }}"></script>
+{% endblock %}

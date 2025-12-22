@@ -4,9 +4,9 @@ from datetime import datetime, time, date
 from flask import render_template, request, redirect, jsonify, url_for, flash, abort, session
 from DentalApp import app, STANDARD_SLOTS, login, db
 import dao
-from DentalApp.dao import benhnhan_da_co_lich_trong_ngay
 from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDieuTri, TrangThaiThanhToan
 from flask_login import login_user, logout_user, login_required, current_user
+from decorators import dentist_required,booking_required, staff_required
 
 # login -----------------------------------------------------------------
 @app.route('/login', methods=['get', 'post'])
@@ -35,6 +35,7 @@ def login_index():
 
             elif user.VaiTro == UserRole.NhanVien:
                 return redirect("/reception/dashboard")
+
             elif user.VaiTro == UserRole.QuanLy:
                 return redirect("/report-stats")
 
@@ -107,6 +108,7 @@ def logout_my_user():
 # Đặt lịch --------------------------------------------------------------------------
 @app.route("/booking")
 @login_required
+@booking_required
 def booking():
     # STT 1: Load_Form - Tải danh sách Nha sĩ, Dịch vụ, Ngày hiện tại
     today = datetime.now().strftime('%Y-%m-%d')
@@ -201,7 +203,7 @@ def book_appointment():
     #
     #Chống spam:0
 
-    da_co = benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
+    da_co = dao.benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
 
     if da_co:
         return jsonify({
@@ -229,6 +231,7 @@ def book_appointment():
 # Nha sĩ ------------------------------------------------------------------------
 @app.route('/medical-record', methods=['get', 'post'])
 @login_required
+@dentist_required
 def medical_record():
     # patients = dao.load_waiting_patients(current_user.MaNguoiDung)
     services = dao.load_services_list()
@@ -453,6 +456,7 @@ def api_save_examination():
 # nhân viên -------------------------------------------------------------
 # --- ROUTE 1: DASHBOARD CHÍNH (Chỉ load Lịch hẹn) ---
 @app.route('/reception/dashboard')
+@staff_required
 def reception_dashboard():
     # 1. Lấy tham số filter
     selected_date_str = request.args.get('date', str(date.today()))

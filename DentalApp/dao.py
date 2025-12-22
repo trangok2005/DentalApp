@@ -1,6 +1,5 @@
 from sqlalchemy import and_, func
-
-from DentalApp import app, db
+from DentalApp import app, db, VAT
 from datetime import datetime, date
 import hashlib
 from flask_login import login_user, logout_user, login_required, current_user
@@ -235,7 +234,6 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
 
 
 def get_lich_hen_by_id(ma_lh):
-    """Lấy thông tin lịch hẹn theo ID"""
     return LichHen.query.get(ma_lh)
 
 
@@ -276,16 +274,7 @@ def load_invoice(ma_lh: int):
     return pdt.hoadon
 
 
-# def search_medicines(keyword):
-#     today = date.today()
-#     keyword = keyword.lower()
-#     return Thuoc.query.filter(
-#         and_(
-#             Thuoc.TenThuoc.contains(keyword),
-#             Thuoc.SoLuongTonKho > 0,
-#             Thuoc.HanSuDung >= today
-#         )
-#     ).all()
+
 #
 # def get_dental_bill_details(ma_pdt):
 #     # 1. Lấy phiếu điều trị
@@ -383,7 +372,7 @@ def complete_payment(obj):
 
     # 3. (Tùy chọn) Kiểm tra xem đã thanh toán chưa để tránh trùng lặp
     # Giả sử enum TrangThaiThanhToan.Da_Thanh_Toan so sánh được
-    if hd.TrangThai == TrangThaiThanhToan.Da_Thanh_Toan:
+    if hd.TrangThai == 'Da_Thanh_Toan':
         print("Lỗi: Hóa đơn này đã được thanh toán trước đó.")
         return False
 
@@ -391,6 +380,7 @@ def complete_payment(obj):
         # 4. Cập nhật thông tin
         hd.PTTT = obj['PTTT']
         hd.MaNhanVien = obj['MaNhanVien']
+        hd.VAT = 10
 
         # Cập nhật trạng thái
         hd.TrangThai = TrangThaiThanhToan.Da_Thanh_Toan

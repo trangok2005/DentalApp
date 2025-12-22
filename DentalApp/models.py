@@ -225,7 +225,7 @@ class HoaDon(db.Model):
 #
 if __name__ == "__main__":
     with app.app_context():
-        # print(db.session.query(Thuoc).first())
+
         db.create_all()
         lt1 = NhanVien(
             HoTen="Lê Thị Hạnh",

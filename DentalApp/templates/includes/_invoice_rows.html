@@ -1,0 +1,56 @@
+{% if ds_hoadon %}
+    {% for hd in ds_hoadon %}
+    <tr>
+        <td class="ps-4 fw-bold text-primary">#{{ hd.MaHD }}</td>
+
+        <td>
+            <div class="fw-bold">{{ hd.benhnhan.HoTen }}</div>
+            <small class="text-muted">
+                BS: {{ hd.phieudieutri.nhasi.HoTen if hd.phieudieutri else '--' }}
+            </small>
+        </td>
+
+        <td class="fw-bold text-danger">
+            {{ "{:,.0f}".format(hd.TongTienDV + hd.TongTienThuoc) }} đ
+        </td>
+
+        <td>
+            {# So sánh với value của Enum: 'Da_Thanh_Toan' #}
+            {% if hd.TrangThai == 'TrangThaiThanhToan.Da_Thanh_Toan' %}
+                <span class="badge bg-success">
+                    <i class="fas fa-check me-1"></i>Đã thanh toán
+                </span>
+            {% else %}
+                <span class="badge bg-warning text-dark">Chưa thanh toán</span>
+            {% endif %}
+        </td>
+
+        <td>{{ hd.NgayLap.strftime('%H:%M %d/%m') }}</td>
+
+        <td class="text-end pe-4">
+
+            {# LOGIC ẨN HIỆN NÚT #}
+            {% if hd.TrangThai == 'TrangThaiThanhToan.Da_Thanh_Toan' %}
+
+                <button class="btn btn-light btn-sm text-muted border" disabled>
+                    <i class="fas fa-check-double"></i> Hoàn tất
+                </button>
+
+            {% else %}
+
+                <a href="{{ url_for('dental_bill', ma_hd=hd.MaHD) }}"
+                   class="btn btn-success btn-sm fw-bold shadow-sm">
+                    <i class="fas fa-cash-register me-1"></i> Thu Tiền
+                </a>
+
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="6" class="text-center py-5">
+            <p class="text-muted">Không tìm thấy hóa đơn nào.</p>
+        </td>
+    </tr>
+{% endif %}

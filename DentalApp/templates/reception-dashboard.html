@@ -22,6 +22,7 @@ Quản Lý Lịch Hẹn | Phòng Khám Nha Khoa
     <div class="card shadow-sm mb-4 border-0">
         <div class="card-body bg-light rounded">
             <form method="GET" action="" class="row g-3">
+                <input type="hidden" name="active_tab" value="{{ active_tab }}">
                 <div class="col-md-3">
                     <label class="form-label fw-bold">Ngày khám</label>
                     <input type="date" name="date" class="form-control" value="{{ selected_date }}">
@@ -57,148 +58,172 @@ Quản Lý Lịch Hẹn | Phòng Khám Nha Khoa
     </div>
 
     <div class="card shadow border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                    <tr>
-                        <th class="py-3 ps-4">Giờ hẹn</th>
-                        <th class="py-3">Bệnh Nhân</th>
-                        <th class="py-3">Bác Sĩ Phụ Trách</th>
-                        <th class="py-3">Trạng Thái</th>
-                        <th class="py-3">Ghi Chú</th>
-                        <th class="py-3 text-end pe-4">Hành Động</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% if ds_lichhen %}
-                    {% for lh in ds_lichhen %}
-                    <tr>
-                        <td class="ps-4">
-                            <div class="fw-bold text-dark" style="font-size: 1.1rem;">
-                                {{ lh.GioKham.strftime('%H:%M') }}
-                            </div>
-                            <small class="text-muted">{{ lh.NgayKham.strftime('%d/%m/%Y') }}</small>
-                        </td>
-
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-circle me-3 bg-soft-primary text-primary fw-bold">
-                                    {{ lh.benhnhan.HoTen[0] }}
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">{{ lh.benhnhan.HoTen }}</h6>
-                                    <small class="text-muted"><i class="fas fa-phone-alt me-1"></i>{{ lh.benhnhan.SDT }}</small>
-                                </div>
-                            </div>
-                        </td>
-
-                        <td>
-                            <span class="badge bg-light text-dark border">
-                                {{ lh.nhasi.HoTen }}
-                            </span>
-                        </td>
-
-                        <td>
-                            <span class="badge bg-secondary">{{ lh.TrangThai }}</span>
-                        </td>
-
-                        <td class="text-muted text-truncate" style="max-width: 150px;">
-                            {{ lh.GhiChu or '---' }}
-                        </td>
-
-                        <td class="text-end pe-4">
-
-                            {# CHỜ KHÁM #}
-                            {% if lh.TrangThai.value == 'Chờ Khám' %}
-
-                            <div class="btn-group">
-                                <button type="button"
-                                        class="btn btn-outline-danger btn-sm js-cancel-btn"
-                                        data-id="{{ lh.MaLH }}"
-                                        data-name="{{ lh.benhnhan.HoTen }}">
-                                    <i class="fas fa-times"></i> Hủy
-                                </button>
-                            </div>
-
-                            {# TRỄ GIỜ #}
-                            {% if lh.is_late %}
-                            <span class="badge bg-warning text-dark ms-2">Trễ giờ</span>
-                            {% endif %}
-
-                            {# ĐÃ KHÁM #}
-                            {% elif lh.TrangThai.value == 'Đã Khám' %}
-
-                            <a href="{{ url_for('dental_bill', ma_lh=lh.MaLH) }}"
-                               class="btn btn-success btn-sm fw-bold">
-                                Thanh toán
-                            </a>
-
-
-                            {# ĐÃ HỦY #}
-                            {% elif lh.TrangThai.value == 'Hủy' %}
-                            <span class="badge bg-danger">Đã hủy</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80" alt="Empty">
-                            <p class="mt-3 text-muted">Không có lịch hẹn nào phù hợp.</p>
-                        </td>
-                    </tr>
-                    {% endif %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="card-header bg-white border-bottom-0 pb-0">
+            <ul class="nav nav-tabs card-header-tabs" id="dashboardTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold text-primary {% if active_tab == 'appointment' %}active{% endif %}"
+                            id="appointment-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#appointment-pane"
+                            type="button"
+                            role="tab"
+                            aria-selected="{{ 'true' if active_tab == 'appointment' else 'false' }}">
+                        <i class="fas fa-calendar-check me-2"></i>Lịch Hẹn Khám
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold text-success {% if active_tab == 'payment' %}active{% endif %}"
+                            id="payment-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#payment-pane"
+                            type="button"
+                            role="tab"
+                            aria-selected="{{ 'true' if active_tab == 'payment' else 'false' }}">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Thanh Toán Viện Phí
+                    </button>
+                </li>
+            </ul>
         </div>
-    </div>
-</div>
 
-<div class="modal fade" id="cancelModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="/cancel-appointment">
+        <div class="card-body p-0">
+            <div class="tab-content" id="dashboardTabsContent">
 
-                <div class="modal-header">
-                    <h5 class="modal-title text-danger">Xác nhận hủy lịch</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-                    <p>
-                        Bạn có chắc chắn muốn hủy lịch hẹn của bệnh nhân: <br>
-                        <strong id="modalPatientName" class="text-primary" style="font-size: 1.2rem;"></strong>
-                    </p>
-                    <input type="hidden" name="ma_lh" id="modalApptId">
-
-                    <input type="hidden" name="current_date" value="{{ selected_date }}">
-                    <input type="hidden" name="current_doctor" value="{{ selected_doctor or '' }}">
-                    <input type="hidden" name="current_keyword" value="{{ keyword }}">
-
-                    <div class="mb-3">
-                        <label class="form-label">Lý do hủy:</label>
-                        <select name="ly_do" class="form-select" required>
-                            <option value="Khách yêu cầu">Khách yêu cầu hủy</option>
-                            <option value="Quá hẹn (No-show)">Khách không đến (Quá hẹn)</option>
-                            <option value="Bác sĩ bận">Bác sĩ bận đột xuất</option>
-                        </select>
+                <div class="tab-pane fade show active {% if active_tab == 'payment' %}show active{% endif %}" id="appointment-pane" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                            <tr>
+                                <th class="py-3 ps-4">Giờ hẹn</th>
+                                <th class="py-3">Bệnh Nhân</th>
+                                <th class="py-3">Bác Sĩ</th>
+                                <th class="py-3">Trạng Thái</th>
+                                <th class="py-3">Ghi Chú</th>
+                                <th class="py-3 text-end pe-4">Hành Động</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% if ds_lichhen %}
+                            {% for lh in ds_lichhen %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold">{{ lh.GioKham.strftime('%H:%M') }}</div>
+                                    <small class="text-muted">{{ lh.NgayKham.strftime('%d/%m/%Y') }}</small>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ lh.benhnhan.HoTen }}</div>
+                                    <small class="text-muted">{{ lh.benhnhan.SDT }}</small>
+                                </td>
+                                <td>{{ lh.nhasi.HoTen }}</td>
+                                <td>
+                                <span class="badge
+                                    {% if lh.TrangThai.value == 'Chờ Khám' %}bg-warning text-dark
+                                    {% elif lh.TrangThai.value == 'Đã Khám' %}bg-success
+                                    {% elif lh.TrangThai.value == 'Hủy' %}bg-secondary
+                                    {% endif %}">
+                                    {{ lh.TrangThai.value }}
+                                </span>
+                                </td>
+                                <td class="text-muted text-truncate" style="max-width: 150px;">
+                                    {{ lh.GhiChu or '---' }}
+                                </td>
+                                <td class="text-end pe-4">
+                                    {# CHỈ CÒN NÚT HỦY CHO TRẠNG THÁI CHỜ #}
+                                    {% if lh.TrangThai.value == 'Chờ Khám' %}
+                                    <button type="button" class="btn btn-outline-danger btn-sm js-cancel-btn"
+                                            data-id="{{ lh.MaLH }}" data-name="{{ lh.benhnhan.HoTen }}">
+                                        <i class="fas fa-times"></i> Hủy
+                                    </button>
+                                    {% if lh.is_late %}
+                                    <span class="badge bg-danger ms-1">Trễ</span>
+                                    {% endif %}
+                                    {% elif lh.TrangThai.value == 'Đã Khám' %}
+                                    <span class="text-success"><i class="fas fa-check"></i> Đã khám xong</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">Không có lịch hẹn.</td>
+                            </tr>
+                            {% endif %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <button type="submit" class="btn btn-danger">Xác nhận Hủy</button>
+                <div class="tab-pane fade" id="payment-pane" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                            <tr>
+                                <th class="py-3 ps-4">Mã HĐ</th>
+                                <th class="py-3">Bệnh Nhân</th>
+                                <th class="py-3">Tổng Tiền</th>
+                                <th class="py-3">Trạng Thái</th>
+                                <th class="py-3">Ngày Lập</th>
+                                <th class="py-3 text-end pe-4">Thao Tác</th>
+                            </tr>
+                            </thead>
+
+                            <tbody id="invoice-table-body">
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <div class="spinner-border text-primary mb-2" role="status"></div>
+                                    <p>Đang tải dữ liệu thanh toán...</p>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </form>
+
+            </div>
         </div>
     </div>
-</div>
 
-{% endblock %}
+    <div class="modal fade" id="cancelModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="/cancel-appointment">
 
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/reception-dashboard.js') }}"></script>
-{% endblock %}
+                    <div class="modal-header">
+                        <h5 class="modal-title text-danger">Xác nhận hủy lịch</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <p>
+                            Bạn có chắc chắn muốn hủy lịch hẹn của bệnh nhân: <br>
+                            <strong id="modalPatientName" class="text-primary" style="font-size: 1.2rem;"></strong>
+                        </p>
+                        <input type="hidden" name="ma_lh" id="modalApptId">
+
+                        <input type="hidden" name="current_date" value="{{ selected_date }}">
+                        <input type="hidden" name="current_doctor" value="{{ selected_doctor or '' }}">
+                        <input type="hidden" name="current_keyword" value="{{ keyword }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Lý do hủy:</label>
+                            <select name="ly_do" class="form-select" required>
+                                <option value="Khách yêu cầu">Khách yêu cầu hủy</option>
+                                <option value="Quá hẹn (No-show)">Khách không đến (Quá hẹn)</option>
+                                <option value="Bác sĩ bận">Bác sĩ bận đột xuất</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-danger">Xác nhận Hủy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% endblock %}
+
+    {% block scripts %}
+    <script src="{{ url_for('static', filename='js/reception-dashboard.js') }}"></script>
+    {% endblock %}

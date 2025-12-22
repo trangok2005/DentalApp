@@ -1,12 +1,13 @@
 # index
 from datetime import datetime, time, date
-from flask import render_template, request, redirect, jsonify, url_for, flash, abort
+from flask import render_template, request, redirect, jsonify, url_for, flash, abort, session
 from DentalApp import app, STANDARD_SLOTS, login, db
 import dao
-from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien
+from DentalApp.dao import benhnhan_da_co_lich_trong_ngay
+from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDieuTri, TrangThaiThanhToan
 from flask_login import login_user, logout_user, login_required, current_user
 
-
+# login -----------------------------------------------------------------
 @app.route('/login', methods=['get', 'post'])
 def login_index():
     err_msg = None
@@ -97,7 +98,7 @@ def logout_my_user():
     logout_user()
     return redirect("/")
 
-
+# Đặt lịch --------------------------------------------------------------------------
 @app.route("/booking")
 @login_required
 def booking():
@@ -192,6 +193,14 @@ def book_appointment():
     #             appt['time'] == new_appointment['time']):
     #         return jsonify({'success': False, 'message': 'Giờ này vừa bị người khác đặt!'})
     #
+    #Chống spam:0
+    da_co = benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
+
+    if da_co:
+        return jsonify({
+            'success': False,
+            'message': 'Bạn đã có lịch trong ngày này rồi!'
+        })
 
     try:
         # Gọi hàm add_booking đã được sửa lại logic (xem bước 4)
@@ -280,20 +289,146 @@ def search_medicines_api():
     return jsonify(result)
 
 
+# Helper để khởi tạo session nếu chưa có
+def get_cart():
+    if 'exam_cart' not in session:
+        session['exam_cart'] = {
+            'patient_id': None,
+            'appointment_id': None,
+            'services': [],  # List dict: {id, name, price, desc}
+            'medicines': []  # List dict: {id, name, unit, price, quantity, usage}
+        }
+    return session['exam_cart']
+
+
+# 1. API Reset Session khi bắt đầu khám bệnh nhân mới
+@app.route('/api/cart/init', methods=['POST'])
+@login_required
+def init_cart_api():
+    data = request.json
+    session['exam_cart'] = {
+        'patient_id': data.get('maBenhNhan'),
+        'appointment_id': data.get('maLichHen'),
+        'services': [],
+        'medicines': []
+    }
+    session.modified = True
+    return jsonify({"success": True})
+
+
+# 2. API Thêm Dịch Vụ vào Session
+@app.route('/api/cart/add-service', methods=['POST'])
+@login_required
+def add_service_to_cart():
+    cart = get_cart()
+    data = request.json  # {id, name, price, desc}
+
+    # Kiểm tra trùng
+    exists = any(s['id'] == data['id'] for s in cart['services'])
+    if exists:
+        return jsonify({"error": "Dịch vụ đã tồn tại"}), 400
+
+    cart['services'].append(data)
+    session.modified = True
+    return jsonify(cart['services'])  # Trả về danh sách mới nhất
+
+
+# 3. API Xóa Dịch Vụ khỏi Session
+@app.route('/api/cart/remove-service', methods=['POST'])
+@login_required
+def remove_service_from_cart():
+    cart = get_cart()
+    service_id = str(request.json.get('id'))
+
+    # Lọc bỏ service có id trùng
+    cart['services'] = [s for s in cart['services'] if str(s['id']) != service_id]
+    session.modified = True
+    return jsonify(cart['services'])
+
+
+# 4. API Thêm Thuốc vào Session (Xử lý cộng dồn số lượng)
+@app.route('/api/cart/add-medicine', methods=['POST'])
+@login_required
+def add_medicine_to_cart():
+    cart = get_cart()
+    data = request.json  # {id, name, unit, price, quantity, usage, stock}
+
+    # Kiểm tra thuốc đã có trong giỏ chưa
+    found = False
+    for item in cart['medicines']:
+        if str(item['id']) == str(data['id']):
+            # Nếu có rồi thì cộng dồn số lượng và cập nhật liều dùng
+            new_qty = item['quantity'] + int(data['quantity'])
+            if new_qty > data['stock']:  # Kiểm tra tồn kho lần nữa phía server
+                return jsonify({"error": f"Vượt quá tồn kho (Tối đa: {data['stock']})"}), 400
+
+            item['quantity'] = new_qty
+            item['usage'] = data['usage']  # Cập nhật liều dùng mới nhất
+            found = True
+            break
+
+    if not found:
+        cart['medicines'].append(data)
+
+    session.modified = True
+    return jsonify(cart['medicines'])
+
+
+# 5. API Xóa Thuốc khỏi Session
+@app.route('/api/cart/remove-medicine', methods=['POST'])
+@login_required
+def remove_medicine_from_cart():
+    cart = get_cart()
+    med_id = str(request.json.get('id'))
+    cart['medicines'] = [m for m in cart['medicines'] if str(m['id']) != med_id]
+    session.modified = True
+    return jsonify(cart['medicines'])
+
+# 7. API Xóa toàn bộ thuốc trong Session (Dùng cho nút Hủy Bỏ)
+@app.route('/api/cart/clear-medicines', methods=['POST'])
+@login_required
+def clear_medicines_cart():
+    cart = get_cart()
+    cart['medicines'] = []  # Reset list thuốc về rỗng
+    session.modified = True # Bắt buộc có để Flask lưu thay đổi
+    return jsonify({"success": True})
+
+# 6. SỬA LẠI API LƯU PHIẾU (Đọc từ Session)
 @app.route('/api/save-examination', methods=['POST'])
 @login_required
 def api_save_examination():
     try:
-        data = request.json
+        data = request.json  # Chỉ chứa chuanDoan, còn lại lấy trong session
+        cart = get_cart()
+
+        # Validate cơ bản
+        if not cart['patient_id']:
+            return jsonify({"success": False, "message": "Phiên làm việc hết hạn hoặc chưa chọn bệnh nhân"}), 400
+
+        if not cart['services']:
+            return jsonify({"success": False, "message": "Chưa chọn dịch vụ nào"}), 400
+
+        # Lấy list ID dịch vụ
+        service_ids = [s['id'] for s in cart['services']]
+
+        # Map lại cấu trúc thuốc cho hàm DAO
+        medicines_payload = [{
+            "maThuoc": m['id'],
+            "soLuong": m['quantity'],
+            "lieuDung": m['lieuDung'] if 'lieuDung' in m else m.get('usage')  # handle naming diff
+        } for m in cart['medicines']]
 
         ma_pdt = dao.save_examination(
-            ma_benh_nhan=data.get('maBenhNhan'),
+            ma_benh_nhan=cart['patient_id'],
             ma_nha_si=current_user.MaNguoiDung,
             chuan_doan=data.get('chuanDoan'),
-            service_ids=data.get('services', []),
-            medicines=data.get('medicines', []),
-            ma_lich_hen=data.get('maLichHen')
+            service_ids=service_ids,
+            medicines=medicines_payload,
+            ma_lich_hen=cart['appointment_id']
         )
+
+        # Lưu xong thì clear session
+        session.pop('exam_cart', None)
 
         return jsonify({
             "success": True,
@@ -302,39 +437,37 @@ def api_save_examination():
 
     except Exception as ex:
         db.session.rollback()
+        print(ex)
         return jsonify({
             "success": False,
             "message": str(ex)
         }), 500
 
 
-# Le tan
+# nhân viên -------------------------------------------------------------
+# --- ROUTE 1: DASHBOARD CHÍNH (Chỉ load Lịch hẹn) ---
 @app.route('/reception/dashboard')
 def reception_dashboard():
-    # 1. Lấy tham số filter từ URL
+    # 1. Lấy tham số filter
     selected_date_str = request.args.get('date', str(date.today()))
     doctor_id = request.args.get('doctor_id')
     keyword = request.args.get('keyword')
 
-    # 2. Query cơ bản: Lấy lịch hẹn của ngày đã chọn
+    # 2. Query Lịch Hẹn (Giữ nguyên logic cũ của bạn)
     query = LichHen.query.filter(LichHen.NgayKham == selected_date_str)
 
-    # 3. Apply Filters
     if doctor_id and doctor_id != 'all':
         query = query.filter(LichHen.MaNhaSi == doctor_id)
 
     if keyword:
-        # Join bảng BenhNhan để tìm theo tên hoặc SĐT
         query = query.join(BenhNhan).filter(
             (BenhNhan.HoTen.contains(keyword)) | (BenhNhan.SDT.contains(keyword))
         )
 
-    # Sắp xếp theo giờ khám
     ds_lichhen = query.order_by(LichHen.GioKham.asc()).all()
-
-    # Lấy danh sách nha sĩ để hiện trong dropdown
     ds_nhasi = NhaSi.query.all()
 
+    # KHÔNG TRUYỀN ds_hoadon VÀO ĐÂY NỮA
     return render_template('reception-dashboard.html',
                            ds_lichhen=ds_lichhen,
                            ds_nhasi=ds_nhasi,
@@ -343,41 +476,49 @@ def reception_dashboard():
                            keyword=keyword if keyword else "")
 
 
-# Route xử lý hủy lịch
-@app.route('/cancel-appointment', methods=['POST'])
-def cancel_appointment_route():
-    # 1. Lấy dữ liệu xử lý hủy
-    ma_lh = request.form.get('ma_lh')
-    ly_do = request.form.get('ly_do')
+# --- ROUTE 2: API LẤY HÓA ĐƠN (Lazy Load) ---
+@app.route('/api/get-invoices')
+def get_invoices_api():
+    # 1. Lấy lại các tham số filter từ request AJAX gửi lên
+    selected_date_str = request.args.get('date', str(date.today()))
+    doctor_id = request.args.get('doctor_id')
+    keyword = request.args.get('keyword')
 
-    # 2. Lấy dữ liệu Filter để phục hồi trạng thái cũ
-    # (Lấy từ các input hidden mình vừa thêm ở Bước 1)
-    current_date = request.form.get('current_date')
-    current_doctor = request.form.get('current_doctor')
-    current_keyword = request.form.get('current_keyword')
+    # 2. Query Hóa Đơn (Logic tìm kiếm giống Dashboard cũ)
+    query_hd = HoaDon.query.filter(db.func.date(HoaDon.NgayLap) == selected_date_str)
 
-    # 3. Gọi DAO xử lý hủy (Logic cũ của bạn)
-    if ma_lh and ly_do:
-        result = dao.huy_lich_hen(ma_lh, ly_do)
-        if result:
-            flash('Đã hủy lịch hẹn thành công!', 'success')
-        else:
-            flash('Lỗi: Không tìm thấy lịch hẹn.', 'danger')
+    if doctor_id and doctor_id != 'all':
+        # Join PhieuDieuTri vì HoaDon thường nối qua PhieuDieuTri mới biết bác sĩ nào
+        query_hd = query_hd.join(PhieuDieuTri).filter(PhieuDieuTri.MaNhaSi == doctor_id)
 
-    # 4. Redirect THÔNG MINH (Kèm theo tham số cũ)
-    # url_for sẽ tự tạo ra link kiểu: /reception/dashboard?date=2023-12-18&keyword=Tuan...
-    return redirect(url_for('reception_dashboard',
-                            date=current_date,
-                            doctor_id=current_doctor,
-                            keyword=current_keyword))
+    if keyword:
+        # Join BenhNhan để tìm tên/sđt
+        query_hd = query_hd.join(BenhNhan).filter(
+            (BenhNhan.HoTen.contains(keyword)) | (BenhNhan.SDT.contains(keyword))
+        )
+
+    # Ưu tiên hóa đơn chưa thanh toán lên đầu
+    ds_hoadon = query_hd.order_by(HoaDon.TrangThai.asc()).all()
+
+    # 3. Thay vì trả về JSON, ta trả về file HTML con chứa các thẻ <tr>
+    return render_template('includes/_invoice_rows.html', ds_hoadon=ds_hoadon)
 
 #Hóa Đơn --------------------------------------------------------------------------------
 
-@app.route("/dental-bill/<int:ma_lh>")
-def dental_bill(ma_lh):
-    invoice = dao.load_invoice(ma_lh)
-    #import pdb; pdb.set_trace()
-    return render_template("dental-bill.html", invoice=invoice)
+@app.route('/dental-bill/<int:ma_hd>')
+def dental_bill(ma_hd):
+    # 1. Truy vấn trực tiếp Hóa Đơn theo ID
+    invoice = HoaDon.query.get(ma_hd)
+
+    if not invoice:
+        flash('Không tìm thấy hóa đơn này.', 'danger')
+        return redirect(url_for('reception_dashboard'))
+
+    # # 2. Kiểm tra nếu đã thanh toán rồi thì cảnh báo (tùy chọn)
+    # if invoice.TrangThaiThanhToan = TrangThaiThanhToan.  # Hoặc check theo Enum của bạn
+    #     flash('Hóa đơn này đã được thanh toán.', 'warning')
+
+    return render_template('dental-bill.html', invoice=invoice)
 
 
 
@@ -416,6 +557,7 @@ def pay():
     # 1. Lấy dữ liệu từ Form HTML gửi lên
     ma_hd = request.form.get('ma_hd')
     pttt = request.form.get('payment_method')
+    ma_lh = request.form.get('ma_lh')
 
     # Validate cơ bản
     if not ma_hd or not pttt:
@@ -477,6 +619,7 @@ def api_revenue_stats():
         if criteria == 'month':
             # Thống kê theo 12 tháng trong năm
             stats = dao.get_revenue_by_month(year)
+            print(">>> DATA THỐNG KÊ:", stats)
 
             # Tạo mảng 12 tháng mặc định là 0
             monthly_data = {i: 0 for i in range(1, 13)}

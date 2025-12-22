@@ -603,7 +603,8 @@ def report_stats():
     # if current_user.VaiTro != UserRole.QuanLy or \
     #         (isinstance(current_user, NhanVien) and current_user.BoPhan != UserRole.QuanLy):
     if current_user.VaiTro != UserRole.QuanLy:
-        return render_template("index.html", error="Bạn không có quyền truy cập trang này!")
+        return redirect(url_for('index'))
+        # return render_template("index.html", error="Bạn không có quyền truy cập trang này!")
 
     return render_template("report.html")
 

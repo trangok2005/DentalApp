@@ -60,13 +60,17 @@
                             <span>Tiền Thuốc:</span>
                             <span class="fw-bold">{{ "{:,.0f}".format(invoice.TongTienThuoc) }} đ</span>
                         </div>
+                         <div class="d-flex justify-content-between mb-2">
+                            <span>VAT:</span>
+                            <span class="fw-bold">{{ "{:,.0f}".format(invoice.VAT) }} đ</span>
+                        </div>
 
                         <hr class="my-3">
 
                         <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded border border-primary border-opacity-25">
                             <span class="fw-bold text-dark">TỔNG CỘNG:</span>
                             <span class="fs-2 fw-bold text-danger">
-                                {{ "{:,.0f}".format(invoice.TongTienDV + invoice.TongTienThuoc) }} đ
+                                {{ "{:,.0f}".format(invoice.TongTienDV + invoice.TongTienThuoc + invoice.VAT) }} đ
                             </span>
                         </div>
 

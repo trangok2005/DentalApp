@@ -4,7 +4,7 @@ from datetime import datetime, date
 import hashlib
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func, extract
-
+from decimal import Decimal
 from models import (NguoiDung, NhanVien, UserRole, NhaSi, DichVu, LichHen, BenhNhan, Thuoc,
                     PhieuDieuTriDichVu, PhieuDieuTri, DonThuoc, ChiTietDonThuoc, TrangThaiLichHen, HoaDon, TrangThaiThanhToan)
 
@@ -222,11 +222,13 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
         lich_hen.TrangThai = TrangThaiLichHen.DA_KHAM
 
         # 5. TẠO HÓA ĐƠN (Mới thêm)
+        vat = (tong_tien_dv + tong_tien_thuoc) * Decimal(VAT)
         hoa_don = HoaDon(
             MaBenhNhan=ma_benh_nhan,
             MaPDT=pdt.MaPDT,
             TongTienDV=tong_tien_dv,
-            TongTienThuoc=tong_tien_thuoc
+            TongTienThuoc=tong_tien_thuoc,
+            VAT = vat
         )
         db.session.add(hoa_don)
 
@@ -381,7 +383,6 @@ def complete_payment(obj):
         # 4. Cập nhật thông tin
         hd.PTTT = obj['PTTT']
         hd.MaNhanVien = obj['MaNhanVien']
-        hd.VAT = 10
 
         # Cập nhật trạng thái
         hd.TrangThai = TrangThaiThanhToan.Da_Thanh_Toan

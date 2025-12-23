@@ -235,7 +235,7 @@ class HoaDon(db.Model):
     TongTienDV = Column(Numeric(12, 0), default=0)
     TongTienThuoc = Column(Numeric(12, 0), default=0)
     # VAT có thể là Float vì là % nhưng tiền phải là Numeric. Ở đây để đơn giản lưu tiền VAT
-    VAT = Column(Numeric(12, 0), default=VAT)
+    VAT = Column(Numeric(12, 2))
     PTTT = Column(String(50))  # Phương thức thanh toán
     TrangThai = Column(String(50), default=TrangThaiThanhToan.Chua_Thanh_Toan.value)
     NgayThanhToan = Column(DateTime)

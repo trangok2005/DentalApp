@@ -1,44 +1,126 @@
+/*nav*/
+  /* 1. TÙY BIẾN THANH NAVBAR NỀN TỐI */
+.navbar {
+    /* ĐỔI NỀN: Sử dụng màu Xanh Navy đậm hoàng gia */
+    /* Dùng gradient nhẹ để tạo độ sâu sang trọng */
+    background: linear-gradient(135deg, #0f3460 0%, #164a85 100%) !important;
 
+    /* ĐỔI BÓNG: Nền tối thì bóng phải tối và đậm hơn */
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3) !important;
+
+    /* Xóa đường viền mờ cũ đi vì không còn hợp với nền tối */
+    border-bottom: none !important;
+
+    /* Giữ nguyên padding */
+    padding-top: 15px !important;
+    padding-bottom: 15px !important;
+}
+
+/* 2. TÙY BIẾN ẢNH LOGO */
+.navbar-brand img {
+    /* Phóng to hình ảnh lên 2 lần (theo code của bạn) */
+    transform: scale(2);
+    /* QUAN TRỌNG: Khi phóng to quá lớn, cần đẩy lùi sang trái để không đè lên chữ */
+    margin-left: 15px !important;
+    margin-right: 25px !important; /* Đẩy chữ ra xa logo */
+    /* Làm sáng logo một chút để nổi trên nền tối (tùy chọn) */
+    filter: brightness(1.1) drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+}
+
+/* 3. TÙY BIẾN LOGO CHỮ (Q&B Dental Center) */
+.navbar-brand span {
+    font-family: 'Playfair Display', serif !important;
+    font-weight: 900 !important; /* Tăng độ đậm lên một chút */
+
+    /* ĐỔI MÀU CHỮ: Chuyển sang màu TRẮNG để nổi bật trên nền xanh đậm */
+    color: #ffffff !important;
+
+    letter-spacing: -0.5px;
+    font-size: 1.9rem !important; /* Tăng nhẹ cỡ chữ */
+
+    /* Đổ bóng chữ đậm hơn giúp chữ nổi khối 3D */
+    text-shadow: 0px 3px 5px rgba(0,0,0,0.4) !important;
+}
+
+/* --- BỔ SUNG QUAN TRỌNG --- */
+/* Vì nền đã tối, các icon bên phải (User, Logout) cũng phải chuyển sang màu trắng */
+
+/* Icon người dùng và các link khác trong navbar */
+.navbar .nav-link,
+.navbar i,
+.navbar .text-secondary {
+    color: rgba(255,255,255,0.8) !important; /* Màu trắng hơi mờ */
+    transition: color 0.3s ease;
+}
+
+/* Khi rê chuột vào thì sáng hẳn lên */
+.navbar .nav-link:hover,
+.navbar i:hover {
+    color: #ffffff !important;
+}
+
+/* Riêng nút Logout màu đỏ thì giữ nguyên hoặc cho sáng hơn */
+.text-danger i {
+    color: #ff6b6b !important;
+}
 /* Tiêu đề chính index */
-.hero-title {
-    font-size: 1.5rem;
+/* Copy đoạn này vào file style.css của bạn */
+.title-gradient {
+    font-size: 1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: white;
+    padding: 15px 40px;
+    border-radius: 100px;
+    display: block;
+    width: fit-content;
+    margin: 0 auto 20px auto;
     text-align: center;
-    font-weight: 700;
-    color: #007bff;
-    margin-bottom: 15px;
-    /*display: flex;*/
-    align-items: center;
-    gap: 10px;
-    animation: fadeInDown 0.8s ease-in-out;
+    background: linear-gradient(270deg, #004e92, #00c6fb, #004e92);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+    box-shadow: 0 8px 15px rgba(0, 198, 251, 0.4);
 }
 
-/* Icon răng */
+/* Các phần khác giữ nguyên */
 .tooth-icon {
-    color: #0d6efd;
-    animation: pulse 1.5s infinite ease-in-out;
+    margin-right: 15px;
+    animation: float 3s ease-in-out infinite;
 }
 
-/* Đoạn văn */
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+}
+
 .hero-text {
     font-size: 1.1rem;
     line-height: 1.7;
     margin-bottom: 20px;
     animation: fadeIn 1.2s ease-in-out;
 }
-/*RESPONSIVE*/
+
+/* RESPONSIVE */
 @media (min-width: 599px) {
-        .hero-title {
-            font-size: 2.5rem;
-        }
+    .title-gradient {
+        font-size: 2.5rem;
+    }
 }
 @media (min-width: 992px) {
-        .hero-title {
-            font-size: 3.5rem; /* Chữ to hơn trên máy tính */
-        }
-        .hero-section {
-            padding-right: 3rem; /* kc với form bên phải */
-        }
+    .title-gradient {
+        font-size: 3rem;
     }
+    .hero-section {
+        padding-right: 3rem;
+    }
+}
 
 /* Hiệu ứng */
 @keyframes fadeInDown {
@@ -79,7 +161,7 @@
 .box-title { color: #007bff; text-align: center; font-weight: bold; margin-bottom: 20px; }
 time-input { color: orange; font-weight: bold; text-align: center; }
 
-        /* Table Styling */
+ /* Table Styling */
 .slot-table th { background-color: #5b9bd5; color: white; text-align: center; }
 .slot-table td { text-align: center; vertical-align: middle; cursor: pointer; }
 .slot-row-selected { background-color: #5cb85c !important; color: white; } /* Màu xanh lá khi chọn */
@@ -120,7 +202,6 @@ time-input { color: orange; font-weight: bold; text-align: center; }
 }
 
 //hàng chờ
-
 .queue-box {
     background-color: #f8f9fa; /* nền nhạt, nhẹ mắt */
     border-radius: 10px;
@@ -190,8 +271,6 @@ time-input { color: orange; font-weight: bold; text-align: center; }
 }
 
 //Lễ tân
-
-
 .avatar-circle {
     width: 40px; height: 40px;
     border-radius: 50%;
@@ -205,3 +284,6 @@ time-input { color: orange; font-weight: bold; text-align: center; }
 .table-hover tbody tr:hover {
     background-color: rgba(0,0,0,0.02);
 }
+
+
+

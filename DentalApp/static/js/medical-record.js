@@ -21,6 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- PHẦN 1: CHỌN BỆNH NHÂN & INIT SESSION ---
+function checkIsLate(gioKham){
+    const currentTime = new Date().toTimeString().slice(0, 5);
+
+    //console.log("Giờ hiện tại:", currentTime);
+    return currentTime > gioKham;
+}
+
 async function reloadPatientQueue() {
     const container = document.getElementById('patientQueueList');
     container.innerHTML = '';
@@ -41,7 +48,14 @@ async function reloadPatientQueue() {
         div.dataset.pid = p.maBenhNhan;
         div.dataset.appt = p.maLH;
 
-        div.innerHTML = `${index + 1}. ${p.hoTen} – ${p.gioKham} <span class="status">${p.isLate ? '[Muộn giờ]' : '[Chờ khám]'}</span>`;
+        const isLate = checkIsLate(p.gioKham);
+
+        div.innerHTML = `
+            ${index + 1}. ${p.hoTen} – ${p.gioKham}
+            <span class="status ${isLate ? 'text-danger fw-bold' : 'text-success'}">
+                ${isLate ? '[Đã qua giờ]' : '[Chờ khám]'}
+            </span>
+        `;
 
         div.addEventListener('click', async function () {
             await selectPatient(this.dataset.pid, this.dataset.appt, this);

@@ -112,9 +112,6 @@ document.getElementById('btnConfirm').addEventListener('click', async () => {
     const phone = document.getElementById('patientPhone').value;
     const note = document.getElementById('patientNote').value;
 
-
-
-
     if (!time || !name || !phone || !note) {
         alert('Vui lòng điền đầy đủ thông tin và chọn giờ khám!');
         return;

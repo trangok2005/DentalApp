@@ -16,7 +16,7 @@
 
         <td>
             {# So sánh với value của Enum: 'Da_Thanh_Toan' #}
-            {% if hd.TrangThai == 'Da_Thanh_Toan' %}
+            {% if hd.TrangThai == 'DaThanhToan' %}
                 <span class="badge bg-success">
                     <i class="fas fa-check me-1"></i>Đã thanh toán
                 </span>
@@ -30,7 +30,7 @@
         <td class="text-end pe-4">
 
             {# LOGIC ẨN HIỆN NÚT #}
-            {% if hd.TrangThai == 'Da_Thanh_Toan' %}
+            {% if hd.TrangThai == 'DaThanhToan' %}
 
                 <button class="btn btn-light btn-sm text-muted border" disabled>
                     <i class="fas fa-check-double"></i> Hoàn tất

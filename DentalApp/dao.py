@@ -92,10 +92,11 @@ def add_booking(obj):
         appt = LichHen(
             NgayKham=obj['date'],
             GioKham=obj['time'],
-            GhiChu=obj.get('note'),
+            GhiChu=obj['note'],
             MaNhaSi=obj['dentist_id'],
             MaBenhNhan=patient.MaNguoiDung  # ID lấy từ patient (cũ hoặc mới)
         )
+
         db.session.add(appt)
         db.session.commit()
         return True

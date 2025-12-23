@@ -407,7 +407,7 @@ def get_revenue_by_month(year):
         func.sum(HoaDon.TongTienDV + HoaDon.TongTienThuoc + HoaDon.VAT)
     ).filter(
         func.extract('year', HoaDon.NgayLap) == year,
-        HoaDon.TrangThai == 'TrangThaiThanhToan.Da_Thanh_Toan'  # Chỉ tính hóa đơn đã thanh toán
+        HoaDon.TrangThai == 'DaThanhToan'  # Chỉ tính hóa đơn đã thanh toán
     ).group_by(
         func.extract('month', HoaDon.NgayLap)
     ).order_by(
@@ -430,7 +430,7 @@ def get_revenue_by_dentist(month, year):
         NhaSi, NhaSi.MaNguoiDung == PhieuDieuTri.MaNhaSi
     ).filter(
         func.extract('year', HoaDon.NgayLap) == year,
-        HoaDon.TrangThai == 'TrangThaiThanhToan.Da_Thanh_Toan'
+        HoaDon.TrangThai == 'DaThanhToan'
     )
 
     # Nếu có chọn tháng thì lọc thêm tháng

@@ -1,0 +1,120 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container-fluid mt-4">
+    <h2 class="text-center text-primary fw-bold mb-4">BÁO CÁO DOANH THU</h2>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-info text-white">Bộ lọc</div>
+                <div class="card-body">
+                    <form id="filterForm">
+                        <div class="form-group mb-3">
+                            <label>Tiêu chí:</label>
+                            <select class="form-control" id="criteriaSelect">
+                                <option value="month">Theo Tháng</option>
+                                <option value="dentist">Theo Bác Sĩ</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Năm:</label>
+                            <input type="number" class="form-control" id="yearInput" value="2025">
+                        </div>
+                        <div class="form-group mb-3" id="monthFilterGroup" style="display:none;">
+                            <label>Tháng:</label>
+                            <select class="form-control" id="monthInput">
+                                <option value="">-- Cả năm --</option>
+                                {% for i in range(1, 13) %}
+                                <option value="{{ i }}">Tháng {{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="button" onclick="loadChartData()" class="btn btn-primary w-100">Xem Báo Cáo</button>
+                    </form>
+                </div>
+            </div>
+            <div class="alert alert-success mt-3 text-center">
+                <h5>Tổng doanh thu:</h5>
+                <h3 id="totalRevenueDisplay">0 đ</h3>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="revenueChart" style="height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // 1. Xử lý ẩn hiện ô chọn tháng
+    document.getElementById('criteriaSelect').addEventListener('change', function() {
+        const type = this.value;
+        const monthGroup = document.getElementById('monthFilterGroup');
+        monthGroup.style.display = (type === 'dentist') ? 'block' : 'none';
+        if(type !== 'dentist') document.getElementById('monthInput').value = "";
+    });
+
+    let myChart = null;
+
+    async function loadChartData() {
+        const criteria = document.getElementById('criteriaSelect').value;
+        const year = document.getElementById('yearInput').value;
+        const month = document.getElementById('monthInput').value;
+
+        try {
+            // Gọi API cũ của chúng ta
+            const res = await fetch('/api/revenue-stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ criteria, year, month })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                renderChart(data.chartData, criteria);
+                // Tính tổng
+                const total = data.chartData.data.reduce((a, b) => a + b, 0);
+                document.getElementById('totalRevenueDisplay').innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total);
+            } else {
+                alert("Lỗi: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Lỗi kết nối");
+        }
+    }
+
+    function renderChart(chartData, criteria) {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        const labelText = criteria === 'month' ? 'Doanh thu theo Tháng' : 'Doanh thu theo Bác sĩ';
+
+        if (myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: labelText,
+                    data: chartData.data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    // Load mặc định
+    document.addEventListener('DOMContentLoaded', () => {
+        loadChartData();
+    });
+</script>
+{% endblock %}

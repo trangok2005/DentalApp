@@ -7,6 +7,9 @@ import dao
 from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDieuTri, TrangThaiThanhToan
 from flask_login import login_user, logout_user, login_required, current_user
 from decorators import dentist_required,booking_required, staff_required
+from flask_admin import Admin
+from admin import AuthenticatedModelView, AnalyticsView, LogoutView # Import từ file admin.py
+from models import Thuoc, DichVu, NguoiDung, NhanVien, NhaSi, BenhNhan, PhieuDieuTri, HoaDon
 
 # login -----------------------------------------------------------------
 @app.route('/login', methods=['get', 'post'])
@@ -37,7 +40,7 @@ def login_index():
                 return redirect("/reception/dashboard")
 
             elif user.VaiTro == UserRole.QuanLy:
-                return redirect("/report-stats")
+                return redirect("/admin")
 
         # Nếu sai bất kỳ bước nào
         err_msg = "Sai thông tin đăng nhập hoặc vai trò không đúng!"
@@ -652,6 +655,22 @@ def api_revenue_stats():
     except Exception as ex:
         print(ex)
         return jsonify({'success': False, 'message': str(ex)})
+
+# ADMIN ---------------------------------------------------
+admin = Admin(app=app, name='QUẢN TRỊ NHA KHOA')
+
+admin.add_view(AuthenticatedModelView(Thuoc, db.session, name="Quản lý Thuốc"))
+admin.add_view(AuthenticatedModelView(DichVu, db.session, name="Dịch vụ"))
+admin.add_view(AuthenticatedModelView(NhanVien, db.session, name="Nhân viên"))
+admin.add_view(AuthenticatedModelView(NhaSi, db.session, name="Nha sĩ"))
+admin.add_view(AuthenticatedModelView(BenhNhan, db.session, name="Bệnh nhân"))
+admin.add_view(AuthenticatedModelView(HoaDon, db.session, name="Hóa đơn"))
+
+# 2. Thêm trang Thống kê vào menu Admin
+admin.add_view(AnalyticsView(name='Báo cáo Doanh thu', endpoint='stats'))
+
+# 3. Thêm nút Đăng xuất
+admin.add_view(LogoutView(name='Đăng xuất'))
 
 if __name__ == "__main__":
     with app.app_context():

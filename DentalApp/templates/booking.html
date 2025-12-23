@@ -1,4 +1,9 @@
 {%extends 'layout/base.html'%}
+
+{% block title %}
+Trang Đặt Lịch | Q&B
+{% endblock %}
+
 {%block content%}
 <div class="row">
     <div class="col-md-5">
@@ -39,7 +44,7 @@
                                data-is-staff="{{ 'true' if current_user.VaiTro.name == 'NhanVien' else 'false' }}"
                                placeholder="09xxxxxxx"
                                value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.SDT }}{% endif %}"
-                               {% if current_user.VaiTro == 'Patient' %}readonly{% endif %}>
+                               {% if current_user.VaiTro.value == 'Patient' %}readonly{% endif %}>
                         <small id="phoneFeedback" class="text-success" style="display:none;">
                             <i class="fas fa-check-circle"></i> Tìm thấy bệnh nhân cũ
                         </small>
@@ -50,8 +55,9 @@
                     <label class="col-sm-3 col-form-label">Họ Tên</label>
                     <div class="col-sm-9">
                         <input type="text" class="form-control" id="patientName" name="name"
-                               placeholder="Nhập họ tên"
-                               value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.HoTen }}{% endif %}">
+                               placeholder="Nhập họ tên của bênh nhân"
+                               value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.HoTen }}{% endif %}"
+                               {% if current_user.VaiTro.value == 'Patient' %}readonly{% endif %}>
                     </div>
                 </div>
 

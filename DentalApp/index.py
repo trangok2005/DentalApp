@@ -8,7 +8,7 @@ from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDi
 from flask_login import login_user, logout_user, login_required, current_user
 from decorators import dentist_required,booking_required, staff_required
 from flask_admin import Admin
-from admin import AuthenticatedModelView, AnalyticsView, LogoutView # Import từ file admin.py
+from admin import AuthenticatedModelView, AnalyticsView, LogoutView, MyHomeScreen  # Import từ file admin.py
 from models import Thuoc, DichVu, NguoiDung, NhanVien, NhaSi, BenhNhan, PhieuDieuTri, HoaDon
 
 # login -----------------------------------------------------------------
@@ -599,17 +599,17 @@ def pay():
     return redirect(url_for('reception_dashboard'))
 
 #quan lý ------------------------------------------------------------------------------------
-@app.route("/report-stats")
-@login_required
-def report_stats():
-    # Bảo vệ: Chỉ Quản lý mới được vào
-    # if current_user.VaiTro != UserRole.QuanLy or \
-    #         (isinstance(current_user, NhanVien) and current_user.BoPhan != UserRole.QuanLy):
-    if current_user.VaiTro != UserRole.QuanLy:
-        return redirect(url_for('index'))
-        # return render_template("index.html", error="Bạn không có quyền truy cập trang này!")
-
-    return render_template("report.html")
+# @app.route("/report-stats")
+# @login_required
+# def report_stats():
+#     # Bảo vệ: Chỉ Quản lý mới được vào
+#     # if current_user.VaiTro != UserRole.QuanLy or \
+#     #         (isinstance(current_user, NhanVien) and current_user.BoPhan != UserRole.QuanLy):
+#     if current_user.VaiTro != UserRole.QuanLy:
+#         return redirect(url_for('index'))
+#         # return render_template("index.html", error="Bạn không có quyền truy cập trang này!")
+#
+#     return render_template("report.html")
 
 
 @app.route("/api/revenue-stats", methods=['POST'])
@@ -652,8 +652,7 @@ def api_revenue_stats():
         print(ex)
         return jsonify({'success': False, 'message': str(ex)})
 
-# ADMIN ---------------------------------------------------
-admin = Admin(app=app, name='QUẢN TRỊ NHA KHOA')
+admin = Admin(app=app, name='QUẢN TRỊ NHA KHOA',index_view=MyHomeScreen(name='Trang chủ'))
 
 admin.add_view(AuthenticatedModelView(Thuoc, db.session, name="Quản lý Thuốc"))
 admin.add_view(AuthenticatedModelView(DichVu, db.session, name="Dịch vụ"))
@@ -662,8 +661,7 @@ admin.add_view(AuthenticatedModelView(NhaSi, db.session, name="Nha sĩ"))
 admin.add_view(AuthenticatedModelView(BenhNhan, db.session, name="Bệnh nhân"))
 admin.add_view(AuthenticatedModelView(HoaDon, db.session, name="Hóa đơn"))
 
-# 2. Thêm trang Thống kê vào menu Admin
-admin.add_view(AnalyticsView(name='Báo cáo Doanh thu', endpoint='stats'))
+# admin.add_view(AnalyticsView(name='Báo cáo Doanh thu', endpoint='stats'))
 
 # 3. Thêm nút Đăng xuất
 admin.add_view(LogoutView(name='Đăng xuất'))

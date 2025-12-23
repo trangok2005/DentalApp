@@ -39,7 +39,7 @@
                                data-is-staff="{{ 'true' if current_user.VaiTro.name == 'NhanVien' else 'false' }}"
                                placeholder="09xxxxxxx"
                                value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.SDT }}{% endif %}"
-                               {% if current_user.VaiTro.value== 'Patient' %}readonly{% endif %}>
+                               {% if current_user.VaiTro == 'Patient' %}readonly{% endif %}>
                         <small id="phoneFeedback" class="text-success" style="display:none;">
                             <i class="fas fa-check-circle"></i> Tìm thấy bệnh nhân cũ
                         </small>

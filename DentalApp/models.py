@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, datetime
 
 
 from DentalApp import db, app, VAT
@@ -13,6 +13,9 @@ class UserRole(enum.Enum):
     NhaSi = "Dentist"
     BenhNhan = "Patient"
     NhanVien = "Staff"
+
+    def __str__(self):
+        return self.value
 
 class TrangThaiLichHen(enum.Enum):
 
@@ -138,6 +141,21 @@ class LichHen(db.Model):
             return pdt.hoadon
 
         return None
+
+    @property
+    def is_late(self):
+        # Chỉ tính trễ nếu trạng thái là "Chờ Khám"
+        if self.TrangThai.value != 'Chờ Khám':
+            return False
+
+        now = datetime.now()
+
+        # Kết hợp ngày khám và giờ khám thành 1 mốc thời gian đầy đủ
+        # Giả sử GioKham là kiểu time, NgayKham là kiểu date
+        appt_datetime = datetime.combine(self.NgayKham, self.GioKham)
+
+        return now > appt_datetime
+
 
 class PhieuDieuTri(db.Model):
     __tablename__ = 'phieudieutri'

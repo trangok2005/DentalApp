@@ -195,16 +195,6 @@ def book_appointment():
         'phone': data.get('phone'),
         'note': data.get('patientNote')
     }
-    # import pdb; pdb.set_trace()
-
-    # Kiểm tra trùng lặp (Logic bảo vệ)
-    # for appt in appointments_db:
-    #     if (appt['dentist'] == new_appointment['dentist'] and
-    #             appt['date'] == new_appointment['date'] and
-    #             appt['time'] == new_appointment['time']):
-    #         return jsonify({'success': False, 'message': 'Giờ này vừa bị người khác đặt!'})
-    #
-    #Chống spam:0
 
     da_co = dao.benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
 
@@ -216,7 +206,7 @@ def book_appointment():
 
     try:
         # Gọi hàm add_booking đã được sửa lại logic (xem bước 4)
-        result = dao.add_booking(data)
+        result = dao.add_booking(new_appointment)
 
         if result:
             # giả lập gửi SMS
@@ -489,6 +479,42 @@ def reception_dashboard():
                            keyword=keyword if keyword else "")
 
 
+@app.route('/cancel-appointment', methods=['POST'])
+# Hoặc nếu dùng blueprint: @reception_bp.route('/cancel-appointment', methods=['POST'])
+def cancel_appointment():
+    # 1. Lấy dữ liệu từ Form gửi lên
+    ma_lh = request.form.get('ma_lh')
+    ly_do = request.form.get('ly_do')
+
+    # Lấy các tham số filter cũ để redirect về đúng trang đó
+    current_date = request.form.get('current_date')
+    current_doctor = request.form.get('current_doctor')
+    current_keyword = request.form.get('current_keyword')
+
+    # 2. Tìm lịch hẹn trong DB
+    lh = LichHen.query.get(ma_lh)
+
+    if lh:
+        # 3. Cập nhật trạng thái và ghi chú
+        # Nếu dùng Enum: lh.TrangThai = TrangThaiLichHen.Huy
+        # Nếu dùng String:
+        lh.TrangThai = 'Hủy'  # Hoặc giá trị Enum tương ứng của bạn
+
+        # Ghi thêm lý do vào ghi chú
+        old_note = lh.GhiChu if lh.GhiChu else ""
+        lh.GhiChu = f"{old_note} | Hủy: {ly_do}".strip(" | ")
+
+        db.session.commit()
+        flash('Đã hủy lịch hẹn thành công!', 'success')
+    else:
+        flash('Không tìm thấy lịch hẹn!', 'error')
+
+    # 4. Quay lại Dashboard (kèm theo các filter cũ)
+    return redirect(url_for('reception_dashboard',
+                            date=current_date,
+                            doctor_id=current_doctor,
+                            keyword=current_keyword))
+
 # --- ROUTE 2: API LẤY HÓA ĐƠN (Lazy Load) ---
 @app.route('/api/get-invoices')
 def get_invoices_api():
@@ -534,36 +560,6 @@ def dental_bill(ma_hd):
     return render_template('dental-bill.html', invoice=invoice)
 
 
-
-# @app.route('/api/get-dental-bill-info/<int:ma_pdt>', methods=['GET'])
-# def get_dental_bill_info(ma_pdt):
-#     try:
-#         # Gọi hàm xử lý dưới DAO
-#         data = dao.get_dental_bill_details(ma_pdt)
-#
-#         if not data:
-#             return jsonify({'success': False, 'message': 'Không tìm thấy phiếu điều trị'}), 404
-#
-#         # Lấy data
-#         tien_kham = data['tien_kham']
-#         tien_thuoc = data['tien_thuoc']
-#         vat = data['vat']
-#         tong_tien = data['tong_tien']
-#
-#         return jsonify({
-#             'success': True,
-#             'ho_ten': data['ho_ten'],
-#             'tien_kham': tien_kham,
-#             'tien_thuoc': tien_thuoc,
-#             'vat': vat,
-#             'tong_tien': tong_tien
-#         })
-#
-#     except Exception as e:
-#         print(f"Lỗi tính hóa đơn: {str(e)}")
-#         return jsonify({'success': False, 'message': 'Lỗi hệ thống'}), 500
-
-
 @app.route('/api-pay', methods=["POST"])
 @login_required  # Bắt buộc đăng nhập mới được thanh toán
 def pay():
@@ -602,7 +598,7 @@ def pay():
     # 4. Quay về Dashboard
     return redirect(url_for('reception_dashboard'))
 
-
+#quan lý ------------------------------------------------------------------------------------
 @app.route("/report-stats")
 @login_required
 def report_stats():

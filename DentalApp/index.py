@@ -8,7 +8,9 @@ from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDi
 from flask_login import login_user, logout_user, login_required, current_user
 from decorators import dentist_required,booking_required, staff_required
 from flask_admin import Admin
-from admin import AuthenticatedModelView, AnalyticsView, LogoutView, MyHomeScreen  # Import từ file admin.py
+from admin import AuthenticatedModelView, AnalyticsView, LogoutView, MyHomeScreen, \
+    ThuocModelView, DichVuModelView, NhanVienModelView, NhaSiModelView, BenhNhanModelView, \
+    LichHenModelView, PhieuDieuTriModelView, HoaDonModelView  # Import từ file admin.py
 from models import Thuoc, DichVu, NguoiDung, NhanVien, NhaSi, BenhNhan, PhieuDieuTri, HoaDon
 
 # login -----------------------------------------------------------------
@@ -654,12 +656,18 @@ def api_revenue_stats():
 
 admin = Admin(app=app, name='QUẢN TRỊ NHA KHOA',index_view=MyHomeScreen(name='Trang chủ'))
 
-admin.add_view(AuthenticatedModelView(Thuoc, db.session, name="Quản lý Thuốc"))
-admin.add_view(AuthenticatedModelView(DichVu, db.session, name="Dịch vụ"))
-admin.add_view(AuthenticatedModelView(NhanVien, db.session, name="Nhân viên"))
-admin.add_view(AuthenticatedModelView(NhaSi, db.session, name="Nha sĩ"))
-admin.add_view(AuthenticatedModelView(BenhNhan, db.session, name="Bệnh nhân"))
-admin.add_view(AuthenticatedModelView(HoaDon, db.session, name="Hóa đơn"))
+admin.add_view(ThuocModelView(Thuoc, db.session, name="Kho Thuốc"))
+admin.add_view(DichVuModelView(DichVu, db.session, name="Dịch Vụ"))
+
+# Nhóm Quản lý Người dùng
+admin.add_view(NhanVienModelView(NhanVien, db.session, name="Nhân Viên", category="Người Dùng"))
+admin.add_view(NhaSiModelView(NhaSi, db.session, name="Nha Sĩ", category="Người Dùng"))
+admin.add_view(BenhNhanModelView(BenhNhan, db.session, name="Bệnh Nhân", category="Người Dùng"))
+
+# Nhóm Quản lý Khám chữa bệnh
+admin.add_view(LichHenModelView(LichHen, db.session, name="Lịch Hẹn", category="Quản Lý Khám"))
+admin.add_view(PhieuDieuTriModelView(PhieuDieuTri, db.session, name="Hồ Sơ Bệnh Án", category="Quản Lý Khám"))
+admin.add_view(HoaDonModelView(HoaDon, db.session, name="Hóa Đơn", category="Tài Chính"))
 
 # admin.add_view(AnalyticsView(name='Báo cáo Doanh thu', endpoint='stats'))
 

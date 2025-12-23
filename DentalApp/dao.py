@@ -39,6 +39,8 @@ def add_Patient(name, username, password, phone):
     db.session.add(user)
     db.session.commit()
 
+    return user
+
 
 def check_Phone(phone):
     return BenhNhan.query.filter(BenhNhan.SDT == phone).first()
@@ -80,8 +82,8 @@ def add_booking(obj):
                     password=obj['phone'],  # Mật khẩu mặc định là SĐT
                     phone=obj['phone']
                 )
-                db.session.add(patient)
-                db.session.commit()  # Commit để lấy được MaNguoiDung
+                # db.session.add(patient)
+                # db.session.commit()  # Commit để lấy được MaNguoiDung
             except Exception as e:
                 db.session.rollback()
                 print("Lỗi tạo user mới:", e)

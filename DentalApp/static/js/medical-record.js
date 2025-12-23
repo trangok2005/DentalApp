@@ -81,15 +81,12 @@ async function selectPatient(pid, apptId, element) {
         const data = await res.json();
         if (data.error) { Alert.error("Lỗi", 'Không tìm thấy bệnh nhân'); return; }
 
-        // Render Info UI
-        const birth = new Date(data.NgaySinh);
-        const age = new Date().getFullYear() - birth.getFullYear();
+        // Render Info Ui
         currentPatientId = data.MaNguoiDung;
         selectedAppointmentId = apptId;
         
         setFormEnabled(true);
         document.getElementById('lblPatientName').innerText = data.HoTen;
-        document.getElementById('lblPatientAge').innerText = age;
         document.getElementById('lblHistory').innerText = data.TienSuBenh || 'Không';
         document.getElementById('iconWarning').style.display = data.TienSuBenh ? 'inline-block' : 'none';
 
@@ -399,7 +396,6 @@ function resetFormPartially() {
     
     updateTotalLabel();
     document.getElementById('lblPatientName').innerText = '...';
-    document.getElementById('lblPatientAge').innerText = '...';
     document.getElementById('lblHistory').innerText = '...';
     document.getElementById('iconWarning').style.display = 'none';
     

@@ -197,14 +197,14 @@ def book_appointment():
         'phone': data.get('phone'),
         'note': data.get('patientNote')
     }
+    if current_user.VaiTro == "Patient":
+        da_co = dao.benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
 
-    da_co = dao.benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
-
-    if da_co:
-        return jsonify({
-            'success': False,
-            'message': 'Bạn đã có lịch trong ngày này rồi!'
-        })
+        if da_co:
+            return jsonify({
+                'success': False,
+                'message': 'Bạn đã có lịch trong ngày này rồi!'
+            })
 
     try:
         # Gọi hàm add_booking đã được sửa lại logic (xem bước 4)

@@ -4,7 +4,7 @@ from datetime import datetime, time, date
 from flask import render_template, request, redirect, jsonify, url_for, flash, abort, session
 from DentalApp import app, STANDARD_SLOTS, login, db
 import dao
-from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDieuTri, TrangThaiThanhToan
+from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDieuTri, TrangThaiThanhToan, TrangThaiLichHen
 from flask_login import login_user, logout_user, login_required, current_user
 from decorators import dentist_required, booking_required, staff_required
 from flask_admin import Admin
@@ -387,7 +387,7 @@ def remove_medicine_from_cart(id):
     return jsonify(cart['medicines'])
 
 
-# 7. API Xóa toàn bộ thuốc trong Session (Dùng cho nút Hủy Bỏ)
+#  Xóa toàn bộ thuốc trong Session
 @app.route('/api/cart/clear-medicines', methods=['POST'])
 @login_required
 def clear_medicines_cart():
@@ -397,7 +397,7 @@ def clear_medicines_cart():
     return jsonify({"success": True})
 
 
-# 6. SỬA LẠI API LƯU PHIẾU (Đọc từ Session)
+#  LƯU PHIẾU
 @app.route('/api/save-examination', methods=['POST'])
 @login_required
 def api_save_examination():
@@ -415,7 +415,7 @@ def api_save_examination():
         # Lấy list ID dịch vụ
         service_ids = [s['id'] for s in cart['services']]
 
-        # Map lại cấu trúc thuốc cho hàm DAO
+        # load lại cáua trúc thuốc
         medicines_payload = [{
             "maThuoc": m['id'],
             "soLuong": m['quantity'],
@@ -449,30 +449,19 @@ def api_save_examination():
 
 
 # nhân viên -------------------------------------------------------------
-# --- ROUTE 1: DASHBOARD CHÍNH (Chỉ load Lịch hẹn) ---
+#  DASHBOARD CHÍNH ---
 @app.route('/reception/dashboard')
 @staff_required
 def reception_dashboard():
-    # 1. Lấy tham số filter
+    # Lấy tham số filter
     selected_date_str = request.args.get('date', str(date.today()))
     doctor_id = request.args.get('doctor_id')
     keyword = request.args.get('keyword')
 
-    # 2. Query Lịch Hẹn (Giữ nguyên logic cũ của bạn)
-    query = LichHen.query.filter(LichHen.NgayKham == selected_date_str)
+    ds_lichhen = dao.get_appointments_if(selected_date_str, doctor_id, keyword)
+    ds_nhasi = dao.get_dentist_list()
 
-    if doctor_id and doctor_id != 'all':
-        query = query.filter(LichHen.MaNhaSi == doctor_id)
-
-    if keyword:
-        query = query.join(BenhNhan).filter(
-            (BenhNhan.HoTen.contains(keyword)) | (BenhNhan.SDT.contains(keyword))
-        )
-
-    ds_lichhen = query.order_by(LichHen.GioKham.asc()).all()
-    ds_nhasi = NhaSi.query.all()
-
-    # KHÔNG TRUYỀN ds_hoadon VÀO ĐÂY NỮA
+    #
     return render_template('reception-dashboard.html',
                            ds_lichhen=ds_lichhen,
                            ds_nhasi=ds_nhasi,
@@ -480,11 +469,10 @@ def reception_dashboard():
                            selected_doctor=int(doctor_id) if doctor_id else None,
                            keyword=keyword if keyword else "")
 
-
+# hủy lịch
 @app.route('/cancel-appointment', methods=['POST'])
-# Hoặc nếu dùng blueprint: @reception_bp.route('/cancel-appointment', methods=['POST'])
 def cancel_appointment():
-    # 1. Lấy dữ liệu từ Form gửi lên
+    # Lấy dữ liệu từ Form gửi lên
     ma_lh = request.form.get('ma_lh')
     ly_do = request.form.get('ly_do')
 
@@ -493,56 +481,41 @@ def cancel_appointment():
     current_doctor = request.form.get('current_doctor')
     current_keyword = request.form.get('current_keyword')
 
-    # 2. Tìm lịch hẹn trong DB
+    #Tìm lịch hẹn trong DB
     lh = LichHen.query.get(ma_lh)
 
     if lh:
-        # 3. Cập nhật trạng thái và ghi chú
-        # Nếu dùng Enum: lh.TrangThai = TrangThaiLichHen.Huy
-        # Nếu dùng String:
-        lh.TrangThai = 'Hủy'  # Hoặc giá trị Enum tương ứng của bạn
+        # Cập nhật trạng thái và ghi chú
+        lh.TrangThai = TrangThaiLichHen.HUY
 
         # Ghi thêm lý do vào ghi chú
         old_note = lh.GhiChu if lh.GhiChu else ""
         lh.GhiChu = f"{old_note} | Hủy: {ly_do}".strip(" | ")
 
         db.session.commit()
+
         flash('Đã hủy lịch hẹn thành công!', 'success')
     else:
         flash('Không tìm thấy lịch hẹn!', 'error')
 
-    # 4. Quay lại Dashboard (kèm theo các filter cũ)
+    # Quay lại Dashboard
     return redirect(url_for('reception_dashboard',
                             date=current_date,
                             doctor_id=current_doctor,
                             keyword=current_keyword))
 
 
-# --- ROUTE 2: API LẤY HÓA ĐƠN (Lazy Load) ---
+# --- lấy hóa đơn ---
 @app.route('/api/get-invoices')
 def get_invoices_api():
-    # 1. Lấy lại các tham số filter từ request AJAX gửi lên
+    # Lấy lại các tham số filter từ request AJAX gửi lên
     selected_date_str = request.args.get('date', str(date.today()))
     doctor_id = request.args.get('doctor_id')
     keyword = request.args.get('keyword')
 
-    # 2. Query Hóa Đơn (Logic tìm kiếm giống Dashboard cũ)
-    query_hd = HoaDon.query.filter(db.func.date(HoaDon.NgayLap) == selected_date_str)
+    ds_hoadon = dao.get_invoices(selected_date_str, doctor_id, keyword)
 
-    if doctor_id and doctor_id != 'all':
-        # Join PhieuDieuTri vì HoaDon thường nối qua PhieuDieuTri mới biết bác sĩ nào
-        query_hd = query_hd.join(PhieuDieuTri).filter(PhieuDieuTri.MaNhaSi == doctor_id)
-
-    if keyword:
-        # Join BenhNhan để tìm tên/sđt
-        query_hd = query_hd.join(BenhNhan).filter(
-            (BenhNhan.HoTen.contains(keyword)) | (BenhNhan.SDT.contains(keyword))
-        )
-
-    # Ưu tiên hóa đơn chưa thanh toán lên đầu
-    ds_hoadon = query_hd.order_by(HoaDon.TrangThai.asc()).all()
-
-    # 3. Thay vì trả về JSON, ta trả về file HTML con chứa các thẻ <tr>
+    #lazy load
     return render_template('includes/_invoice_rows.html', ds_hoadon=ds_hoadon)
 
 

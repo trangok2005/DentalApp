@@ -1,6 +1,6 @@
 from warnings import catch_warnings
 
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from DentalApp import app, db, VAT
 from datetime import datetime, date
 import hashlib
@@ -12,7 +12,7 @@ from models import (NguoiDung, NhanVien, UserRole, NhaSi, DichVu, LichHen, BenhN
 
 
 def auth_user(username, password, role_from_html):
-    # 1. Tìm user theo user/pass
+    # Tìm user theo user/pass
     # password = hashlib.md5(password.strip().encode('utf-8')).hexdigest()
     user = NguoiDung.query.filter(
         NguoiDung.TaiKhoan.__eq__(username),
@@ -255,6 +255,49 @@ def huy_lich_hen(ma_lh, ghi_chu_huy):
         db.session.rollback()
         return False
 
+
+def get_appointments_if(selected_date, dentist_id=None, keyword=None):
+    # ds thao này , ns , key
+    # Lọc theo ngày
+    query = LichHen.query.filter(LichHen.NgayKham == selected_date)
+
+    # Lọc theo nha si
+    if dentist_id and str(dentist_id) != 'all':
+        query = query.filter(LichHen.MaNhaSi == dentist_id)
+
+    #Lọc theo từ khóa ten sdt
+    if keyword:
+        # Join bảng Bệnh nhân để tìm kiếm thông tin
+        query = query.join(BenhNhan).filter(
+            or_(
+                BenhNhan.HoTen.contains(keyword),
+                BenhNhan.SDT.contains(keyword)
+            )
+        )
+
+    # xếp theo tg
+    return query.order_by(LichHen.GioKham.asc()).all()
+
+def get_invoices(selected_date, doctor_id=None, keyword=None):
+    # tim hoa don
+    query = HoaDon.query.filter(func.date(HoaDon.NgayLap) == selected_date)
+
+    # Lọc theo Bác sĩ (Thông qua Phiếu điều trị)
+    if doctor_id and str(doctor_id) != 'all':
+        # Join bảng PhieuDieuTri để lấy MaNhaSi
+        query = query.join(PhieuDieuTri).filter(PhieuDieuTri.MaNhaSi == doctor_id)
+
+    if keyword:
+        search_term = f"%{keyword}%"
+        query = query.join(BenhNhan).filter(
+            or_(
+                BenhNhan.HoTen.ilike(search_term),
+                BenhNhan.SDT.ilike(search_term)
+            )
+        )
+    # xep
+    return query.order_by(HoaDon.TrangThai.asc()).all()
+
 #Hoa don ------------------------------------------------------------------
 def load_invoice(ma_lh: int):
     lh = LichHen.query.get(ma_lh)
@@ -398,6 +441,7 @@ def complete_payment(obj):
         print(f"Lỗi hệ thống khi thanh toán: {ex}")
         return False
 
+#quan lý ---------------------------------------------
 
 def get_revenue_by_month(year):
     # Truy vấn: Nhóm theo tháng, tính tổng (Tiền Dịch vụ + Tiền Thuốc + VAT)
@@ -444,5 +488,4 @@ if __name__ == "__main__":
 
     with app.app_context():
         # datetime.now().date()
-
         print(load_invoice(9))

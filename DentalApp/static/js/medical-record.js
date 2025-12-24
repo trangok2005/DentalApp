@@ -79,9 +79,9 @@ async function selectPatient(pid, apptId, element) {
 
         if (data.error) { Alert.error("Lỗi", 'Không tìm thấy bệnh nhân'); return; }
 
-        // hiên thông tin bênh nhân
+        // set bn đang chọn hiên thông tin bênh nhân
         currentPatientId = data.MaNguoiDung;
-        // set benh nhân đang chọn
+        // set lich hen đang chọn
         selectedAppointmentId = apptId;
         
         setFormEnabled(true);
@@ -89,7 +89,7 @@ async function selectPatient(pid, apptId, element) {
         document.getElementById('lblHistory').innerText = data.TienSuBenh || 'Không';
         document.getElementById('iconWarning').style.display = data.TienSuBenh ? 'inline-block' : 'none';
 
-        // 2. QUAN TRỌNG: Gọi API khởi tạo Session trên Server
+        // Gọi API khởi tạo Session trên Server
         await fetch('/api/cart/init', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -220,6 +220,7 @@ async function addMedicineToGrid() {
         }
     } catch(e) { console.error(e); }
 }
+
 // xu lys nut theem
 document.getElementById("btnAddMedicine").addEventListener('click', addMedicineToGrid);
 
@@ -262,7 +263,7 @@ document.getElementById('tblPrescriptionBody').addEventListener('click', async f
         
         const res = await fetch(`/api/cart/remove-medicine/${id}`, {
             method: 'DELETE',
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json'}
         });
         const updatedList = await res.json();
         renderPrescriptionTable(updatedList);
@@ -272,7 +273,7 @@ document.getElementById('tblPrescriptionBody').addEventListener('click', async f
 //Hủy kê thuốc
 const btnCancelPrescription = document.getElementById('btnCancelPrescription');
 btnCancelPrescription.addEventListener('click', async function () {
-    // 1. Hỏi xác nhận trước khi xóa
+    // xác nhan
     const isConfirmed = await showAlert(
         "Hủy kê đơn?",
         "Toàn bộ thuốc đã chọn trong danh sách sẽ bị xóa!"
@@ -281,19 +282,17 @@ btnCancelPrescription.addEventListener('click', async function () {
     if (!isConfirmed) return;
 
     try {
-        // 2. Gọi API để xóa sạch thuốc trong Session Server
+        //Gọi API để xóa sạch thuốc trong Session Server
         const res = await fetch('/api/cart/clear-medicines', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
 
-        // 3. Reset giao diện về rỗng
+        //Reset giao diện về rỗng
         renderPrescriptionTable([]); // Truyền mảng rỗng để xóa bảng
         resetInputSection();         // Xóa các ô input tìm kiếm
 
-        // 4. Đóng Modal
+        //Đóng Modal
         const modalEl = document.getElementById('prescriptionModal');
         const modal = bootstrap.Modal.getInstance(modalEl);
         modal.hide();
@@ -304,7 +303,7 @@ btnCancelPrescription.addEventListener('click', async function () {
     }
 });
 
-// --- PHẦN 4: LƯU PHIẾU ---
+//LƯU PHIẾU ------------
 document.getElementById('btnLuuPhieu').addEventListener('click', async () => {
     if (!currentPatientId) return;
 
@@ -335,21 +334,39 @@ document.getElementById('btnLuuPhieu').addEventListener('click', async () => {
     }
 });
 
-// --- CÁC HÀM PHỤ TRỢ (Giữ nguyên hoặc chỉnh nhẹ) ---
 
-// Tìm thuốc & Chọn thuốc (Giữ nguyên logic cũ nhưng chú ý biến currentSelectedMed)
+// Tìm thuốc & Chọn thuốc
 let currentSelectedMed = null;
 const txtSearch = document.getElementById("txtSearchMedicine");
 const suggestionBox = document.getElementById("suggestionBox");
-// ... (Logic search thuốc giữ nguyên như code cũ của bạn) ...
-txtSearch.addEventListener("input", async function () {
-    const keyword = this.value.trim();
-    if (keyword.length < 1) { suggestionBox.style.display = "none"; return; }
+
+// tìm thuốc
+let timeoutId = null;
+txtSearch.addEventListener("input", function () {
+   //reset đồng hồ
+    if (timeoutId) {
+        clearTimeout(timeoutId);
+    }
+    //đặt đồng hồ mới
+    timeoutId = setTimeout(() => {
+        const keyword = this.value.trim();
+        searchMedicines(keyword);
+        //console.log(keyword)
+    }, 500);
+});
+
+async function searchMedicines(keyword) {
+    // Nếu từ khóa rỗng
+    if (!keyword) {
+        suggestionBox.style.display = "none";
+        return;
+    }
 
     try {
         const res = await fetch(`/api/medicines/search?q=${keyword}`);
         const data = await res.json();
         suggestionBox.innerHTML = "";
+
         if (!data || data.length === 0) { suggestionBox.style.display = "none"; return; }
 
         suggestionBox.style.display = "block";
@@ -361,7 +378,7 @@ txtSearch.addEventListener("input", async function () {
             suggestionBox.appendChild(item);
         });
     } catch (err) { console.error(err); }
-});
+}
 
 function selectMedicine(med) {
     currentSelectedMed = med;
@@ -412,7 +429,6 @@ document.getElementById('btnCancelExam').addEventListener('click', async () => {
    const confirm = await showAlert("Hủy bỏ?", "Dữ liệu phiên làm việc sẽ mất.");
    if(confirm) {
        resetFormPartially();
-       // Có thể gọi thêm API clear session nếu muốn chắc chắn
    }
 });
 
@@ -420,21 +436,18 @@ function updateTotalLabel() {
     document.getElementById('lblTotal').innerText = formatCurrency(currentTotal);
 }
 
-// Nút mở modal kê đơn (Giữ nguyên, chỉ cần mở modal)
+// Nút mở modal kê đơn
 document.getElementById('btnKeDonThuoc').addEventListener('click', () => {
     if (!currentPatientId) { Alert.warning("Lỗi", "Chưa chọn bệnh nhân"); return; }
+
     document.getElementById('lblPrescriptionPatient').innerText = document.getElementById('lblPatientName').innerText;
     new bootstrap.Modal(document.getElementById('prescriptionModal')).show();
+
     setTimeout(() => document.getElementById('txtSearchMedicine').focus(), 500);
 });
 
-// Nút xác nhận trong modal (Chỉ cần ẩn modal vì data đã sync với server mỗi khi Add/Remove)
+// Nút xác nhận trong modal chỉ cần ẩn
 document.getElementById('btnConfirmPrescription').addEventListener('click', () => {
     bootstrap.Modal.getInstance(document.getElementById('prescriptionModal')).hide();
 });
 
-// Nút hủy trong modal (Cần gọi API xóa hết thuốc nếu muốn tính năng Hủy đúng nghĩa, hoặc chỉ đóng modal)
-document.getElementById('btnCancelPrescription').addEventListener('click', async () => {
-    // Tùy logic: ở đây tôi chỉ đóng modal, giữ nguyên những gì đã thêm
-    bootstrap.Modal.getInstance(document.getElementById('prescriptionModal')).hide();
-});

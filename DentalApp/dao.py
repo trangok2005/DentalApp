@@ -1,3 +1,5 @@
+from warnings import catch_warnings
+
 from sqlalchemy import and_, func
 from DentalApp import app, db, VAT
 from datetime import datetime, date
@@ -22,10 +24,8 @@ def auth_user(username, password, role_from_html):
 
     if role_from_html == 'BenhNhan':
         return user if user.VaiTro == UserRole.BenhNhan else None
-
     elif role_from_html == 'nhasi':
         return user if user.VaiTro == UserRole.NhaSi else None
-
     elif role_from_html == 'nhanvien':
         return user if user.VaiTro == UserRole.NhanVien else None
     elif role_from_html == 'quanly':
@@ -35,17 +35,20 @@ def auth_user(username, password, role_from_html):
 
 def add_Patient(name, username, password, phone):
     password = hashlib.md5(password.strip().encode('utf-8')).hexdigest()
-    user = BenhNhan(HoTen=name, SDT=phone, TaiKhoan=username, MatKhau=password)
-    db.session.add(user)
-    db.session.commit()
-
+    try:
+        user = BenhNhan(HoTen=name, SDT=phone, TaiKhoan=username, MatKhau=password)
+        db.session.add(user)
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return None
     return user
 
 
 def check_Phone(phone):
     return BenhNhan.query.filter(BenhNhan.SDT == phone).first()
 
-def benhnhan_da_co_lich_trong_ngay(phone, ngay_kham):
+def has_appointment_today(phone, ngay_kham):
     bn = BenhNhan.query.filter(BenhNhan.SDT == phone).first()
     return db.session.query(LichHen).filter(
         LichHen.MaBenhNhan == bn.MaNguoiDung,
@@ -54,49 +57,45 @@ def benhnhan_da_co_lich_trong_ngay(phone, ngay_kham):
     ).first()
 
 def add_booking(obj):
-    # 1. Xác định bệnh nhân là ai
-
+    # xác định bệnh nhân
     patient = None
 
     # TH1: Nếu người dùng đang login là bệnh nhân
     if current_user.is_authenticated and current_user.VaiTro.value == "Patient":
         patient = current_user
 
-    # TH2: Lễ tân đặt hộ (hoặc khách vãng lai)
+    # TH2: Lễ tân đặt hộ
     else:
-        # Kiểm tra xem SĐT này đã có trong DB chưa
+        #ktra xem sdt này đã có trong DB chưa
         existing_patient = BenhNhan.query.filter_by(SDT=obj['phone']).first()
 
         if existing_patient:
-            # A. Đã có => Dùng lại bệnh nhân này
             patient = existing_patient
-            # Có thể cập nhật lại tên nếu lễ tân sửa (tùy chọn)
-            # patient.HoTen = obj['name']
+
         else:
-            # B. Chưa có => Tạo bệnh nhân mới
+            # chưa có thì tạo
             try:
-                # Username lấy theo SĐT để tránh trùng, password mặc định
+               #tạo để luu dl
                 patient = add_Patient(
                     name=obj['name'],
                     username=obj['phone'],
-                    password=obj['phone'],  # Mật khẩu mặc định là SĐT
+                    password=obj['phone'],
                     phone=obj['phone']
                 )
-                # db.session.add(patient)
-                # db.session.commit()  # Commit để lấy được MaNguoiDung
+
             except Exception as e:
                 db.session.rollback()
                 print("Lỗi tạo user mới:", e)
                 return False
 
-    # 2. Tạo lịch hẹn
+    #tạo lịch hẹn
     if patient:
         appt = LichHen(
             NgayKham=obj['date'],
             GioKham=obj['time'],
             GhiChu=obj['note'],
             MaNhaSi=obj['dentist_id'],
-            MaBenhNhan=patient.MaNguoiDung  # ID lấy từ patient (cũ hoặc mới)
+            MaBenhNhan=patient.MaNguoiDung
         )
 
         db.session.add(appt)
@@ -114,11 +113,11 @@ def get_patient_info(pid):
     return BenhNhan.query.get(pid)
 
 
-def load_dentist_list():
+def get_dentist_list():
     return NhaSi.query.all()
 
 
-def load_waiting_patients(dentist_id):
+def get_waiting_patients(dentist_id):
     return LichHen.query.filter(
         LichHen.MaNhaSi == dentist_id,
         LichHen.NgayKham == date.today(),
@@ -126,7 +125,7 @@ def load_waiting_patients(dentist_id):
     ).order_by(LichHen.GioKham).all()
 
 
-def load_services_list():
+def get_services_list():
     return DichVu.query.all()
 
 
@@ -135,9 +134,9 @@ def get_appointments_by_dentist_and_date(dentist_id, date):
         dentist_id = int(dentist_id)
     except:
         print("Dentist ID không hợp lệ:", dentist_id)
-        return []  # Tránh crash app
+        return []
 
-        # chuyển ngày về kiểu date
+        #chuyển ngày về kiểu date
     from datetime import datetime
     try:
         date_obj = datetime.strptime(date, "%Y-%m-%d").date()
@@ -145,10 +144,7 @@ def get_appointments_by_dentist_and_date(dentist_id, date):
         print("Ngày không hợp lệ:", date)
         return []
     return (
-        LichHen.query
-        .filter(LichHen.MaNhaSi == dentist_id, LichHen.NgayKham == date)
-        .all()
-    )
+        LichHen.query.filter(LichHen.MaNhaSi == dentist_id, LichHen.NgayKham == date).all())
 
 
 def search_medicines(keyword):

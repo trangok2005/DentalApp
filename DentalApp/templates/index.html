@@ -12,6 +12,7 @@ Trang Chủ | Q&B
 
 <div class="container py-3">
     <div class="row align-items-start justify-content-center">
+
         <div class="col-lg-7 mb-5 mb-lg-0 hero-section text-dark">
 
             <h1 class="title-gradient">
@@ -132,7 +133,7 @@ Trang Chủ | Q&B
                                 <select class="form-select" id="loginRole" name="role" required>
                                     <option value="" selected disabled>Chọn vai trò...</option>
                                     <option value="BenhNhan">Bệnh nhân</option>
-                                    <option value="nhasi">Bác sĩ (Khám & Kê đơn)</option>
+                                    <option value="nhasi">Nha sĩ (Khám & Kê đơn)</option>
                                     <option value="nhanvien">Nhân viên</option>
                                     <option value="quanly">Quản lý</option>
                                 </select>
@@ -173,8 +174,7 @@ Trang Chủ | Q&B
                                 <input type="password" class="form-control" name="confirm" required>
                             </div>
                             <div class="form-text mb-3">Tài khoản mới sẽ mặc định là Bệnh nhân. Vui lòng liên hệ Admin
-                                nếu là
-                                nhân viên.
+                                nếu là nhân viên.
                             </div>
                             {% if register_error %}
                             <div class="alert alert-danger">{{ register_error }}</div>

@@ -40,7 +40,7 @@ class NguoiDung(db.Model, UserMixin):
 
     MaNguoiDung = Column(Integer, primary_key=True, autoincrement=True)
     HoTen = Column(String(100), nullable=False)
-    TaiKhoan = Column(String(50), unique=True, nullable=False)
+    TaiKhoan = Column(String(50), nullable=False)
     MatKhau = Column(String(255), nullable=False)
     VaiTro = Column(Enum(UserRole), nullable=False, default=UserRole.BenhNhan)
 

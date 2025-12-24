@@ -7,9 +7,10 @@ Trang Đặt Lịch | Q&B
 {%block content%}
 <div class="row">
     <div class="col-md-5">
-        <div class="box-left">
-            <h5 class="box-title">Thông tin đặt khám</h5>
 
+        <div class="box-left">
+
+            <h5 class="box-title">Thông tin đặt khám</h5>
             <form id="bookingForm">
                 <div class="mb-3">
                     <label class="form-label">Chọn Nha Sĩ</label>
@@ -23,17 +24,15 @@ Trang Đặt Lịch | Q&B
                 </div>
 
                 <div class="mb-3">
-                    <input name="date" type="date" class="form-control" id="dateInput" value="{{ today }}" min="{{ today }}">
+                    <input name="date" type="date" class="form-control" id="dateInput" value="{{ today }}"
+                           min="{{ today }}">
                 </div>
 
                 <div class="mb-3 row align-items-center">
                     <label class="col-sm-3 col-form-label">Chọn Giờ:</label>
                     <div class="col-sm-9">
                         <input type="text" class="form-control time-input" id="selectedTime" readonly
-                               placeholder="Chọn từ danh sách"
-                               name="time"
-                        >
-
+                               placeholder="Chọn từ danh sách" name="time">
                     </div>
                 </div>
 
@@ -43,8 +42,8 @@ Trang Đặt Lịch | Q&B
                         <input type="text" class="form-control" id="patientPhone" name="phone"
                                data-is-staff="{{ 'true' if current_user.VaiTro.name == 'NhanVien' else 'false' }}"
                                placeholder="09xxxxxxx"
-                               value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.SDT }}{% endif %}"
-                               {% if current_user.VaiTro.value == 'Patient' %}readonly{% endif %}>
+                               value="{% if current_user.VaiTro.value== 'Patient' %} {{ current_user.SDT }} {% endif %}"
+                               {% if current_user.VaiTro.value == 'Patient' %}readonly{% endif %} >
                         <small id="phoneFeedback" class="text-success" style="display:none;">
                             <i class="fas fa-check-circle"></i> Tìm thấy bệnh nhân cũ
                         </small>
@@ -57,7 +56,7 @@ Trang Đặt Lịch | Q&B
                         <input type="text" class="form-control" id="patientName" name="name"
                                placeholder="Nhập họ tên của bênh nhân"
                                value="{% if current_user.VaiTro.value == 'Patient' %}{{ current_user.HoTen }}{% endif %}"
-                               {% if current_user.VaiTro.value == 'Patient' %}readonly{% endif %}>
+                               {% if current_user.VaiTro.value== 'Patient' %}readonly{% endif %}>
                     </div>
                 </div>
 
@@ -82,16 +81,13 @@ Trang Đặt Lịch | Q&B
     <div class="col-md-7">
         <div class="d-flex align-items-center justify-content-between mb-4 mt-3">
 
-             <div style="width: 120px;"></div>
+            <div style="width: 120px;"></div>
 
             <h5 class="text-primary fw-bold m-0 text-uppercase text-center">
                 <i class="bi bi-calendar-check me-2"></i>Chọn Giờ Khám
             </h5>
 
-             <div style="width: 120px;">
-
-                {# 1. Kiểm tra đã đăng nhập #}
-                {# 2. Kiểm tra VaiTro.name bằng 'NhanVien' (theo Enum) #}
+            <div style="width: 120px;">
                 {% if current_user.is_authenticated and current_user.VaiTro.name == 'NhanVien' %}
 
                 <a href="{{ url_for('reception_dashboard', active_tab='appointment') }}"

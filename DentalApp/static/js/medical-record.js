@@ -7,6 +7,7 @@ let currentTotal = 0;
 
 setFormEnabled(false);
 
+//fomat tiền tệ
 function formatCurrency(n) {
     return new Intl.NumberFormat('vi-VN').format(n);
 }
@@ -16,21 +17,17 @@ function setFormEnabled(enabled) {
     document.getElementById('cboServices').disabled = !enabled;
 }
 
+//nap lên
 document.addEventListener('DOMContentLoaded', () => {
     reloadPatientQueue();
 });
 
-// --- PHẦN 1: CHỌN BỆNH NHÂN & INIT SESSION ---
-function checkIsLate(gioKham){
-    const currentTime = new Date().toTimeString().slice(0, 5);
-
-    //console.log("Giờ hiện tại:", currentTime);
-    return currentTime > gioKham;
-}
 
 async function reloadPatientQueue() {
     const container = document.getElementById('patientQueueList');
     container.innerHTML = '';
+
+    //goi api
     const res = await fetch('/api/patient-queue');
     const data = await res.json();
 
@@ -48,12 +45,10 @@ async function reloadPatientQueue() {
         div.dataset.pid = p.maBenhNhan;
         div.dataset.appt = p.maLH;
 
-        const isLate = checkIsLate(p.gioKham);
-
         div.innerHTML = `
             ${index + 1}. ${p.hoTen} – ${p.gioKham}
-            <span class="status ${isLate ? 'text-danger fw-bold' : 'text-success'}">
-                ${isLate ? '[Đã qua giờ]' : '[Chờ khám]'}
+            <span class="status ${p.isLate ? 'text-danger fw-bold' : 'text-success'}">
+                ${p.isLate ? '[Đã qua giờ]' : '[Chờ khám]'}
             </span>
         `;
 
@@ -67,22 +62,26 @@ async function reloadPatientQueue() {
 async function selectPatient(pid, apptId, element) {
     if (isExamining) return;
 
-    // UI Effects
+    // hiện thì đã chọn
     document.querySelectorAll('.queue-item').forEach(el => el.classList.remove('active'));
     element.classList.add('active');
     element.querySelector('.status').innerText = 'Đang khám';
     isExamining = true;
+    // tắt click hàng chờ
     document.getElementById('patientQueueList').classList.add('queue-disabled');
+    //hiện nút hủy
     document.getElementById('btnCancelExam').classList.remove('d-none');
 
     try {
-        // 1. Lấy thông tin bệnh nhân hiển thị
+        // Lấy thông tin bệnh nhân hiển thị
         const res = await fetch(`/api/patient/${pid}`);
         const data = await res.json();
+
         if (data.error) { Alert.error("Lỗi", 'Không tìm thấy bệnh nhân'); return; }
 
-        // Render Info Ui
+        // hiên thông tin bênh nhân
         currentPatientId = data.MaNguoiDung;
+        // set benh nhân đang chọn
         selectedAppointmentId = apptId;
         
         setFormEnabled(true);
@@ -97,7 +96,7 @@ async function selectPatient(pid, apptId, element) {
             body: JSON.stringify({ maBenhNhan: pid, maLichHen: apptId })
         });
 
-        // Reset bảng dịch vụ UI về rỗng (vì session mới tạo chưa có gì)
+        // Reset bảng dv cho phiên làm việc mới
         renderServicesTable([]); 
         
     } catch (err) {
@@ -105,7 +104,7 @@ async function selectPatient(pid, apptId, element) {
     }
 }
 
-// --- PHẦN 2: DỊCH VỤ (SERVICES) QUA SESSION ---
+//  DỊCH VỤ-----------------------------------------------
 
 // Sự kiện chọn combobox
 document.getElementById('cboServices').addEventListener('change', async function() {
@@ -113,8 +112,8 @@ document.getElementById('cboServices').addEventListener('change', async function
     if (cbo.value === "") return;
 
     const selectedOption = cbo.options[cbo.selectedIndex];
-    
-    // Tạo payload gửi lên server
+
+    //Tạo payload gửi lên server
     const payload = {
         id: cbo.value,
         name: selectedOption.getAttribute('data-name'),
@@ -129,9 +128,9 @@ document.getElementById('cboServices').addEventListener('change', async function
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         });
-        
+
         const data = await res.json(); // Data trả về là danh sách Services mới nhất
-        
+
         if (res.status === 400) {
             Alert.error("Lỗi", data.error); // Lỗi trùng dịch vụ
         } else {
@@ -142,7 +141,7 @@ document.getElementById('cboServices').addEventListener('change', async function
     cbo.selectedIndex = 0;
 });
 
-// Hàm vẽ bảng dịch vụ (Nhận list từ server)
+// vẽ bảng dịch vụ (Nhận list từ server)
 function renderServicesTable(serviceList) {
     const tbody = document.getElementById('tblServiceBody');
     tbody.innerHTML = '';
@@ -165,24 +164,23 @@ function renderServicesTable(serviceList) {
     document.getElementById('lblTotal').innerText = formatCurrency(currentTotal);
 }
 
-// Xóa dịch vụ (Gọi API remove)
+// Xóa dịch vụ
 document.getElementById('tblServiceBody').addEventListener('click', async function (e) {
     if (e.target.classList.contains('btn-remove-service')) {
         const id = e.target.dataset.id;
-        
-        const res = await fetch('/api/cart/remove-service', {
-            method: 'POST',
+
+        const res = await fetch(`/api/cart/service/${id}`, {
+            method: 'DELETE',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ id: id })
         });
         const updatedList = await res.json();
         renderServicesTable(updatedList);
     }
 });
 
-// --- PHẦN 3: KÊ ĐƠN THUỐC QUA SESSION ---
+//  KÊ ĐƠN THUỐC  -----------------------------------------------------------------------------
 
-// Thêm thuốc (Gọi API Add Medicine)
+// Thêm thuốc
 async function addMedicineToGrid() {
     if (!currentSelectedMed) {
         Alert.warning("Chưa chọn thuốc", "Vui lòng chọn thuốc từ gợi ý!");
@@ -192,7 +190,7 @@ async function addMedicineToGrid() {
     const qty = parseInt(document.getElementById('txtQuantity').value);
     const usage = document.getElementById('txtUsage').value.trim();
 
-    // Validate Client cơ bản
+    // ktra gia trị
     if (isNaN(qty) || qty <= 0) { Alert.warning("Lỗi", "Số lượng phải > 0"); return; }
     if (!usage) { Alert.warning("Lỗi", "Nhập liều dùng"); return; }
 
@@ -222,10 +220,10 @@ async function addMedicineToGrid() {
         }
     } catch(e) { console.error(e); }
 }
-
+// xu lys nut theem
 document.getElementById("btnAddMedicine").addEventListener('click', addMedicineToGrid);
 
-// Hàm vẽ bảng thuốc (Nhận list từ Server)
+// hàm vẽ bảng thuốc (nhan ds tư server)
 function renderPrescriptionTable(medList) {
     const tbody = document.getElementById('tblPrescriptionBody');
     tbody.innerHTML = '';
@@ -257,15 +255,14 @@ function renderPrescriptionTable(medList) {
     });
 }
 
-// Xóa thuốc (Gọi API Remove Medicine)
+// Xóa thuốc
 document.getElementById('tblPrescriptionBody').addEventListener('click', async function (e) {
     if (e.target.classList.contains('btn-remove-med')) {
         const id = e.target.dataset.id;
         
-        const res = await fetch('/api/cart/remove-medicine', {
-            method: 'POST',
+        const res = await fetch(`/api/cart/remove-medicine/${id}`, {
+            method: 'DELETE',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ id: id })
         });
         const updatedList = await res.json();
         renderPrescriptionTable(updatedList);
@@ -348,11 +345,13 @@ const suggestionBox = document.getElementById("suggestionBox");
 txtSearch.addEventListener("input", async function () {
     const keyword = this.value.trim();
     if (keyword.length < 1) { suggestionBox.style.display = "none"; return; }
+
     try {
         const res = await fetch(`/api/medicines/search?q=${keyword}`);
         const data = await res.json();
         suggestionBox.innerHTML = "";
         if (!data || data.length === 0) { suggestionBox.style.display = "none"; return; }
+
         suggestionBox.style.display = "block";
         data.forEach(med => {
             const item = document.createElement("a");

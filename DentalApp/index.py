@@ -6,12 +6,13 @@ from DentalApp import app, STANDARD_SLOTS, login, db
 import dao
 from models import UserRole, LichHen, NhaSi, BenhNhan, NhanVien, HoaDon, PhieuDieuTri, TrangThaiThanhToan
 from flask_login import login_user, logout_user, login_required, current_user
-from decorators import dentist_required,booking_required, staff_required
+from decorators import dentist_required, booking_required, staff_required
 from flask_admin import Admin
 from admin import AuthenticatedModelView, AnalyticsView, LogoutView, MyHomeScreen, \
     ThuocModelView, DichVuModelView, NhanVienModelView, NhaSiModelView, BenhNhanModelView, \
-    LichHenModelView, PhieuDieuTriModelView, HoaDonModelView  # Import từ file admin.py
+    LichHenModelView, PhieuDieuTriModelView, HoaDonModelView
 from models import Thuoc, DichVu, NguoiDung, NhanVien, NhaSi, BenhNhan, PhieuDieuTri, HoaDon
+
 
 # login -----------------------------------------------------------------
 @app.route('/login', methods=['get', 'post'])
@@ -28,19 +29,16 @@ def login_index():
 
         user = dao.auth_user(username, password, role)
 
-        #print(username, password)
-        # Ktra vai trò
+        # print(username, password)
+        # Ktra vai trò rẽ nhánh
         if user:
             login_user(user)
             if user.VaiTro == UserRole.BenhNhan:
                 return redirect("/booking")
-
             elif user.VaiTro == UserRole.NhaSi:
                 return redirect("/medical-record")
-
             elif user.VaiTro == UserRole.NhanVien:
                 return redirect("/reception/dashboard")
-
             elif user.VaiTro == UserRole.QuanLy:
                 return redirect("/admin")
 
@@ -59,9 +57,9 @@ def register_index():
         confirm = request.form.get("confirm")
         phone = request.form.get("phone")
 
-        phone_pattern = r"^(0|\+84)(3|5|7|8|9)[0-9]{8}$"
+        phone_pattern = r"^0(3|5|7|8|9)[0-9]{8}$"
 
-        # 3. Thực hiện kiểm tra
+        #kiểm tra
         if not re.fullmatch(phone_pattern, phone):
             register_error = "Số điện thoại không hợp lệ"
         elif password != confirm:
@@ -85,11 +83,7 @@ def register_index():
                 print(ex)
                 register_error = "Lỗi hệ thống!"
 
-    return render_template(
-        "index.html",
-        register_error=register_error,
-        active_tab=active_tab
-    )
+    return render_template("index.html", register_error=register_error, active_tab=active_tab)
 
 
 @app.route("/", methods=["get", "post"])
@@ -110,6 +104,7 @@ def logout_my_user():
     logout_user()
     return redirect("/")
 
+
 # Đặt lịch --------------------------------------------------------------------------
 @app.route("/booking")
 @login_required
@@ -117,7 +112,7 @@ def logout_my_user():
 def booking():
     # STT 1: Load_Form - Tải danh sách Nha sĩ, Dịch vụ, Ngày hiện tại
     today = datetime.now().strftime('%Y-%m-%d')
-    DENTISTS = dao.load_dentist_list()
+    DENTISTS = dao.get_dentist_list()
     return render_template("booking.html", dentists=DENTISTS, today=today)
 
 
@@ -134,11 +129,11 @@ def get_slots():
 
     # Lấy danh sách giờ đã đặt
     booked_slots = [appt.GioKham.strftime("%H:%M") for appt in booked]
-    #print(booked_slots)
+    # print(booked_slots)
 
     total_booked = len(booked_slots)
 
-    # STT 2: Kiểm tra điều kiện >= 5 ca
+    #kiểm tra điều kiện >= 5 ca
     if total_booked >= 5:
         return jsonify({
             'status': 'full',
@@ -146,7 +141,7 @@ def get_slots():
             'booked_count': total_booked
         })
 
-    # STT 4: Sinh_DanhSach_GioTrong
+    #tạo ds lịch trống
     available_slots = []
     for slot in STANDARD_SLOTS:
         if slot in booked_slots:
@@ -158,28 +153,26 @@ def get_slots():
             'time': slot,
             'status': state
         })
-
+    #gửi
     return jsonify({
         'status': 'success',
         'booked_count': total_booked,
         'slots': available_slots
     })
 
-
+#tìm bệnh nhân cũ
 @app.route('/api/find-patient', methods=['POST'])
 def find_patient_by_phone():
     data = request.json
     phone = data.get('phone')
 
-    # Gọi DAO để tìm người dùng (bạn cần viết hàm này trong DAO)
-    # Giả sử hàm dao.get_user_by_phone trả về object User hoặc None
     user = dao.check_Phone(phone)
 
     if user:
         return jsonify({
             'found': True,
             'name': user.HoTen,
-            'id': user.MaNguoiDung  # Trả về ID để sau này dùng nếu cần
+            'id': user.MaNguoiDung
         })
     else:
         return jsonify({'found': False})
@@ -187,8 +180,8 @@ def find_patient_by_phone():
 
 @app.route('/api/book', methods=['POST'])
 def book_appointment():
-    # Btn_XacNhan_Click - Lưu vào Database
     data = request.json
+
     new_appointment = {
         'dentist_id': data.get('dentist_id'),
         'date': data.get('date'),
@@ -197,17 +190,17 @@ def book_appointment():
         'phone': data.get('phone'),
         'note': data.get('patientNote')
     }
+    #chan spam đặt lịch
     if current_user.VaiTro == "Patient":
-        da_co = dao.benhnhan_da_co_lich_trong_ngay(new_appointment['phone'], new_appointment['date'])
+        result= dao.has_appointment_today(new_appointment['phone'], new_appointment['date'])
 
-        if da_co:
+        if result:
             return jsonify({
                 'success': False,
                 'message': 'Bạn đã có lịch trong ngày này rồi!'
             })
 
     try:
-        # Gọi hàm add_booking đã được sửa lại logic (xem bước 4)
         result = dao.add_booking(new_appointment)
 
         if result:
@@ -222,14 +215,13 @@ def book_appointment():
         return jsonify({'success': False, 'message': 'Loi he thong!'})
 
 
-
 # Nha sĩ ------------------------------------------------------------------------
 @app.route('/medical-record', methods=['get', 'post'])
 @login_required
 @dentist_required
 def medical_record():
     # patients = dao.load_waiting_patients(current_user.MaNguoiDung)
-    services = dao.load_services_list()
+    services = dao.get_services_list()
     # import pdb; pdb.set_trace()
     return render_template("medical-record.html", services=services)
 
@@ -238,10 +230,8 @@ def medical_record():
 @login_required
 def api_patient_queue():
     try:
-        now_time = datetime.now().time()
-
-        lichhens = dao.load_waiting_patients(current_user.MaNguoiDung)
-        #print(lichhens)
+        lichhens = dao.get_waiting_patients(current_user.MaNguoiDung)
+        # print(lichhens)
         result = []
         for lh in lichhens:
             result.append({
@@ -249,7 +239,7 @@ def api_patient_queue():
                 "maLH": lh.MaLH,
                 "hoTen": lh.benhnhan.HoTen,
                 "gioKham": lh.GioKham.strftime('%H:%M'),
-                "isLate": lh.GioKham < now_time
+                "isLate": lh.is_late
             })
 
         return jsonify(result)
@@ -261,6 +251,7 @@ def api_patient_queue():
 
 @app.route('/api/patient/<int:pid>')
 def get_patient_info(pid):
+
     p = dao.get_patient_info(pid)
 
     if not p:
@@ -269,31 +260,10 @@ def get_patient_info(pid):
     return jsonify({
         "MaNguoiDung": p.MaNguoiDung,
         "HoTen": p.HoTen,
-        "NgaySinh": p.NgaySinh if p.NgaySinh else None,
         "TienSuBenh": p.TienSuBenh or None
     })
 
-
-@app.route('/api/medicines/search')
-def search_medicines_api():
-    keyword = request.args.get('q', '')
-    medicines = dao.search_medicines(keyword)
-
-    # Convert object to dict
-    result = []
-    for m in medicines:
-        result.append({
-            "id": m.MaThuoc,
-            "name": m.TenThuoc,
-            "unit": m.DonViTinh,
-            "price": float(m.DonGia),
-            "stock": m.SoLuongTonKho,
-            "usage": m.LieuDung
-        })
-    return jsonify(result)
-
-
-# Helper để khởi tạo session nếu chưa có
+#khởi tạo session nếu chưa có
 def get_cart():
     if 'exam_cart' not in session:
         session['exam_cart'] = {
@@ -305,7 +275,7 @@ def get_cart():
     return session['exam_cart']
 
 
-# 1. API Reset Session khi bắt đầu khám bệnh nhân mới
+#API Reset Session khi bắt đầu khám bệnh nhân mới
 @app.route('/api/cart/init', methods=['POST'])
 @login_required
 def init_cart_api():
@@ -320,37 +290,61 @@ def init_cart_api():
     return jsonify({"success": True})
 
 
-# 2. API Thêm Dịch Vụ vào Session
+# Thêm Dịch Vụ vào Session
 @app.route('/api/cart/add-service', methods=['POST'])
 @login_required
 def add_service_to_cart():
     cart = get_cart()
     data = request.json  # {id, name, price, desc}
 
-    # Kiểm tra trùng
+    #ktraa trùng
     exists = any(s['id'] == data['id'] for s in cart['services'])
     if exists:
         return jsonify({"error": "Dịch vụ đã tồn tại"}), 400
 
     cart['services'].append(data)
-    session.modified = True
-    return jsonify(cart['services'])  # Trả về danh sách mới nhất
+    session['exam_cart'] = cart
 
+    return jsonify(cart['services'])  #trả về danh sách mới nhất
 
-# 3. API Xóa Dịch Vụ khỏi Session
-@app.route('/api/cart/remove-service', methods=['POST'])
+# xoa dv
+@app.route('/api/cart/service/<id>', methods=['DELETE'])
 @login_required
-def remove_service_from_cart():
+def remove_service_from_cart(id):
     cart = get_cart()
-    service_id = str(request.json.get('id'))
 
-    # Lọc bỏ service có id trùng
-    cart['services'] = [s for s in cart['services'] if str(s['id']) != service_id]
-    session.modified = True
+    # Tìm phần tử cần xóa
+    item_to_remove = next((s for s in cart['services'] if str(s['id']) == id), None)
+
+    # Nếu tìm thấy thì xóa
+    if item_to_remove:
+        cart['services'].remove(item_to_remove)
+
+    #cart['services'] = [ s for s in cart['services'] if str(s['id']) != str(id) ]
+
+    session['exam_cart'] = cart
     return jsonify(cart['services'])
 
+#tim thuoc
+@app.route('/api/medicines/search')
+def search_medicines_api():
+    keyword = request.args.get('q', '')
+    medicines = dao.search_medicines(keyword)
 
-# 4. API Thêm Thuốc vào Session (Xử lý cộng dồn số lượng)
+   #tao list
+    result = []
+    for m in medicines:
+        result.append({
+            "id": m.MaThuoc,
+            "name": m.TenThuoc,
+            "unit": m.DonViTinh,
+            "price": float(m.DonGia),
+            "stock": m.SoLuongTonKho,
+            "usage": m.LieuDung
+        })
+    return jsonify(result)
+
+# Thêm Thuốc vào Session ( cộng dồn số lượng)
 @app.route('/api/cart/add-medicine', methods=['POST'])
 @login_required
 def add_medicine_to_cart():
@@ -373,29 +367,35 @@ def add_medicine_to_cart():
 
     if not found:
         cart['medicines'].append(data)
+    session['exam_cart'] = cart
 
-    session.modified = True
     return jsonify(cart['medicines'])
 
 
-# 5. API Xóa Thuốc khỏi Session
-@app.route('/api/cart/remove-medicine', methods=['POST'])
+#API Xóa Thuốc khỏi Session
+@app.route('/api/cart/remove-medicine/<id>', methods=['DELETE'])
 @login_required
-def remove_medicine_from_cart():
+def remove_medicine_from_cart(id):
     cart = get_cart()
-    med_id = str(request.json.get('id'))
-    cart['medicines'] = [m for m in cart['medicines'] if str(m['id']) != med_id]
-    session.modified = True
+
+    item_to_remove = next((s for s in cart['medicines'] if str(s['id']) == id), None)
+    if item_to_remove:
+        cart['medicines'].remove(item_to_remove)
+
+    session['exam_cart'] = cart
+
     return jsonify(cart['medicines'])
+
 
 # 7. API Xóa toàn bộ thuốc trong Session (Dùng cho nút Hủy Bỏ)
 @app.route('/api/cart/clear-medicines', methods=['POST'])
 @login_required
 def clear_medicines_cart():
     cart = get_cart()
-    cart['medicines'] = []  # Reset list thuốc về rỗng
-    session.modified = True # Bắt buộc có để Flask lưu thay đổi
+    cart['medicines'] = []
+    session.modified = True
     return jsonify({"success": True})
+
 
 # 6. SỬA LẠI API LƯU PHIẾU (Đọc từ Session)
 @app.route('/api/save-examination', methods=['POST'])
@@ -419,7 +419,7 @@ def api_save_examination():
         medicines_payload = [{
             "maThuoc": m['id'],
             "soLuong": m['quantity'],
-            "lieuDung": m['lieuDung'] if 'lieuDung' in m else m.get('usage')  # handle naming diff
+            "lieuDung": m['lieuDung'] if 'lieuDung' in m else m.get('usage')  #ko thay đổi thì sài liều dùng mặt định
         } for m in cart['medicines']]
 
         ma_pdt = dao.save_examination(
@@ -517,6 +517,7 @@ def cancel_appointment():
                             doctor_id=current_doctor,
                             keyword=current_keyword))
 
+
 # --- ROUTE 2: API LẤY HÓA ĐƠN (Lazy Load) ---
 @app.route('/api/get-invoices')
 def get_invoices_api():
@@ -544,7 +545,8 @@ def get_invoices_api():
     # 3. Thay vì trả về JSON, ta trả về file HTML con chứa các thẻ <tr>
     return render_template('includes/_invoice_rows.html', ds_hoadon=ds_hoadon)
 
-#Hóa Đơn --------------------------------------------------------------------------------
+
+# Hóa Đơn --------------------------------------------------------------------------------
 
 @app.route('/dental-bill/<int:ma_hd>')
 def dental_bill(ma_hd):
@@ -600,7 +602,8 @@ def pay():
     # 4. Quay về Dashboard
     return redirect(url_for('reception_dashboard'))
 
-#quan lý ------------------------------------------------------------------------------------
+
+# quan lý ------------------------------------------------------------------------------------
 # @app.route("/report-stats")
 # @login_required
 # def report_stats():
@@ -654,7 +657,8 @@ def api_revenue_stats():
         print(ex)
         return jsonify({'success': False, 'message': str(ex)})
 
-admin = Admin(app=app, name='QUẢN TRỊ NHA KHOA',index_view=MyHomeScreen(name='Trang chủ'))
+
+admin = Admin(app=app, name='QUẢN TRỊ NHA KHOA', index_view=MyHomeScreen(name='Trang chủ'))
 
 admin.add_view(ThuocModelView(Thuoc, db.session, name="Kho Thuốc"))
 admin.add_view(DichVuModelView(DichVu, db.session, name="Dịch Vụ"))
@@ -676,5 +680,5 @@ admin.add_view(LogoutView(name='Đăng xuất'))
 
 if __name__ == "__main__":
     with app.app_context():
-       # print(dao.get_patient_info(1))
+        # print(dao.get_patient_info(1))
         app.run(debug=True)

@@ -12,10 +12,11 @@ async function loadSlots() {
 
     if(!dentist || !date) return;
 
-    // Hiển thị ngày lên giao diện phải
+    //hiển thị thông tin ngày
     const [y, m, d] = date.split('-');
     displayDate.innerText = `${d}/${m}/${y}`;
 
+    //gửi dl
     const response = await fetch('/api/get-slots', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -24,9 +25,9 @@ async function loadSlots() {
 
     const data = await response.json();
 
-    // Xóa bảng cũ
+    //xóa bảng cũ và reset ô chọn giờ
     slotsTableBody.innerHTML = '';
-    //selectedTimeInput.value = ''; // Reset ô giờ chọn
+    selectedTimeInput.value = '';
 
     if (data.status === 'full') {
         statusText.innerText = `${data.booked_count}/5 ca đã đặt (Full)`;
@@ -35,25 +36,25 @@ async function loadSlots() {
         return;
     }
 
-    // Cập nhật trạng thái text
+    //cập nhật trạng thái text
     statusText.innerText = `${data.booked_count}/5 ca đã đặt`;
     statusText.className = 'text-dark';
 
-    // STT 5: Render Grid
+    //Vẽ bảng
     data.slots.forEach((slot, index) => {
         const tr = document.createElement('tr');
 
-        // Xử lý class nếu đã đặt
+        //xử lý class nếu đã đặt
         if (slot.status === 'Đã đặt') {
             tr.className = 'slot-booked';
         } else {
-            // STT 6: Sự kiện Click chọn giờ
+            // thêm sự kiện click chọn giờ
             tr.onclick = function() {
-                // Remove highlight cũ
+                // xóa highlight cũ
                 document.querySelectorAll('.slot-row-selected').forEach(row => row.classList.remove('slot-row-selected'));
-                // Add highlight mới
+                //thêm highlight mới
                 tr.classList.add('slot-row-selected');
-                // Điền vào ô input bên trái
+                //điền vào ô input bên trái
                 selectedTimeInput.value = slot.time;
             };
         }
@@ -70,7 +71,7 @@ async function loadSlots() {
 //ktra user đã tồn tại khi dăt lich hộ
 document.getElementById('patientPhone').addEventListener('blur', async function() {
     const feedback = document.getElementById('phoneFeedback');
-    // Check quyền: Nếu không phải staff thì dừng ngay
+    //ktra quyền
     const isStaff = this.getAttribute('data-is-staff') === 'true';
     if (!isStaff) return
 
@@ -78,6 +79,7 @@ document.getElementById('patientPhone').addEventListener('blur', async function(
     const phone = this.value;
     if (phone.length < 9) return;
 
+    //gửi
     try {
         const response = await fetch('/api/find-patient', {
             method: 'POST',
@@ -88,8 +90,8 @@ document.getElementById('patientPhone').addEventListener('blur', async function(
         const data = await response.json();
         const nameInput = document.getElementById('patientName');
 
-
         if (data.found) {
+        //  them tên vào và hiện thông báo
             nameInput.value = data.name;
             feedback.style.display = 'block';
         } else {
@@ -101,24 +103,26 @@ document.getElementById('patientPhone').addEventListener('blur', async function(
     }
 });
 
-// Sự kiện thay đổi Nha sĩ hoặc Ngày
+//sự kiện thay đổi Nha sĩ hoặc Ngày
 dentistSelect.addEventListener('change', loadSlots);
 dateInput.addEventListener('change', loadSlots);
 
-// STT 8: Xử lý nút Xác nhận
+//xử lý nút Xác nhận
 document.getElementById('btnConfirm').addEventListener('click', async () => {
     const time = selectedTimeInput.value;
     const name = document.getElementById('patientName').value;
-    const phone = document.getElementById('patientPhone').value;
+    const phone = document.getElementById('patientPhone').value.trim();
     const note = document.getElementById('patientNote').value;
 
     if (!time || !name || !phone || !note) {
         alert('Vui lòng điền đầy đủ thông tin và chọn giờ khám!');
         return;
     }
-    regex = /^(0|\+84)[0-9]{9}$/;
+    //chặn sdt rác
+    regex = /^0[0-9]{9}$/;
+    console.log(phone, phone.length);
     if (!regex.test(phone)) {
-        alert('Số điện thoại không đúng định dạng!');
+        alert('Số điện thoại không đúng định dạng!!!');
         document.getElementById('patientPhone').focus();
         return;
     }
@@ -133,7 +137,7 @@ document.getElementById('btnConfirm').addEventListener('click', async () => {
             phone: document.getElementById('patientPhone').value,
             name: document.getElementById('patientName').value,
             patientNote: document.getElementById('patientNote').value
-      })
+       })
     });
     //nhan
     const result = await res.json();
@@ -146,7 +150,7 @@ document.getElementById('btnConfirm').addEventListener('click', async () => {
     }
 });
 
-// STT 9: Nút Hủy (Reset form)
+// Nút Hủy (Reset form)
 document.getElementById('btnCancel').addEventListener('click', () => {
     document.getElementById('bookingForm').reset();
     // Reset lại ngày

@@ -60,11 +60,11 @@ def add_booking(obj):
     # xác định bệnh nhân
     patient = None
 
-    # TH1: Nếu người dùng đang login là bệnh nhân
+    # Nếu người dùng đang login là bệnh nhân
     if current_user.is_authenticated and current_user.VaiTro.value == "Patient":
         patient = current_user
 
-    # TH2: Lễ tân đặt hộ
+    # Lễ tân đặt hộ
     else:
         #ktra xem sdt này đã có trong DB chưa
         existing_patient = BenhNhan.query.filter_by(SDT=obj['phone']).first()
@@ -160,7 +160,7 @@ def search_medicines(keyword):
 
 
 def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines, ma_lich_hen):
-    # 1 tạo phiếu lay id trước
+    #tạo phiếu lay id trước
     pdt = PhieuDieuTri(
         NgayLap=date.today(),
         ChuanDoan=chuan_doan,
@@ -174,7 +174,7 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
     tong_tien_dv = 0
     tong_tien_thuoc = 0
 
-    # 2 thêm dv
+    #thêm dv
     if service_ids:
         dichvus = DichVu.query.filter(
             DichVu.MaDV.in_(service_ids)
@@ -185,7 +185,7 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
         for dv in dichvus:
             tong_tien_dv += dv.DonGia
 
-    # 3 có kê đơn thì tạo đơn thuốc
+    #có kê đơn thì tạo đơn thuốc
     if medicines and len(medicines) > 0:
         donthuoc = DonThuoc(
             NgayKeDon=date.today(),
@@ -214,12 +214,12 @@ def save_examination(ma_benh_nhan, ma_nha_si, chuan_doan, service_ids, medicines
                 tong_tien_thuoc += (thuoc_db.DonGia * ct.SoLuong)
 
 
-    # 4 cập nhật lich hen đã khám
+    #cập nhật lich hen đã khám
     lich_hen = LichHen.query.get(ma_lich_hen)
     if lich_hen:
         lich_hen.TrangThai = TrangThaiLichHen.DA_KHAM
 
-        # 5. TẠO HÓA ĐƠN (Mới thêm)
+        # tạo hóa đơn
         vat = (tong_tien_dv + tong_tien_thuoc) * Decimal(VAT)
         hoa_don = HoaDon(
             MaBenhNhan=ma_benh_nhan,
@@ -267,7 +267,6 @@ def get_appointments_if(selected_date, dentist_id=None, keyword=None):
 
     #Lọc theo từ khóa ten sdt
     if keyword:
-        # Join bảng Bệnh nhân để tìm kiếm thông tin
         query = query.join(BenhNhan).filter(
             or_(
                 BenhNhan.HoTen.contains(keyword),
@@ -282,9 +281,7 @@ def get_invoices(selected_date, doctor_id=None, keyword=None):
     # tim hoa don
     query = HoaDon.query.filter(func.date(HoaDon.NgayLap) == selected_date)
 
-    # Lọc theo Bác sĩ (Thông qua Phiếu điều trị)
     if doctor_id and str(doctor_id) != 'all':
-        # Join bảng PhieuDieuTri để lấy MaNhaSi
         query = query.join(PhieuDieuTri).filter(PhieuDieuTri.MaNhaSi == doctor_id)
 
     if keyword:
@@ -327,22 +324,17 @@ def load_invoice(ma_lh: int):
 #     if not pdt:
 #         return None
 #
-#     #  Lấy tên bệnh nhân (BenhNhan kế thừa NguoiDung nên có HoTen)
-#     ten_benh_nhan = pdt.benhnhan.HoTen if pdt.benhnhan else "Khách vãng lai"
+#     ten_benh_nhan = pdt.benhnhan.HoTen if pdt.benhnhan else "Vô danh tiểu tốt"
 #
 #     # Tính tiền dịch vụ
-#     # pdt.dichvus là relationship Many-to-Many đã định nghĩa trong models
 #     tong_tien_dv = 0
 #     for dv in pdt.dichvus:
 #         tong_tien_dv += float(dv.DonGia)  # Convert Decimal sang float
 #
 #     # Tính tiền thuốc
 #     tong_tien_thuoc = 0
-#     # Kiểm tra xem phiếu có đơn thuốc không (vì quan hệ 1-1 có thể null)
 #     if pdt.donthuoc:
 #         for ct in pdt.donthuoc.chitiet:
-#             # ct.thuoc là relationship lấy thông tin thuốc
-#             # ct.SoLuong lấy từ bảng chi tiết
 #             don_gia_thuoc = float(ct.thuoc.DonGia)
 #             thanh_tien = don_gia_thuoc * ct.SoLuong
 #             tong_tien_thuoc += thanh_tien
@@ -362,7 +354,6 @@ def load_invoice(ma_lh: int):
 
 
 # def add_dental_bill(ma_pdt, pttt, ma_nhan_vien, ghi_chu=None):
-#     # Lấy thông tin phiếu để tính toán lại (Backend phải tự tính, không tin tưởng số liệu từ Frontend gửi về)
 #     pdt = PhieuDieuTri.query.get(ma_pdt)
 #     if not pdt:
 #         return False
@@ -378,11 +369,9 @@ def load_invoice(ma_lh: int):
 #         for ct in pdt.donthuoc.chitiet:
 #             tong_tien_thuoc += float(ct.thuoc.DonGia) * ct.SoLuong
 #
-#     # Tính VAT (10%)
-#     # Lưu ý: Trong models.py bạn khai báo VAT là Numeric(tiền), không phải %
 #     vat = (tong_tien_dv + tong_tien_thuoc) * 0.1
 #
-#     # Tạo đối tượng Hóa Đơn
+#     # tạo obj hóa đơn
 #     hd = HoaDon(
 #         MaPDT=ma_pdt,
 #         MaBenhNhan=pdt.MaBenhNhan,  # Lấy mã bệnh nhân từ phiếu điều trị
@@ -390,7 +379,7 @@ def load_invoice(ma_lh: int):
 #         TongTienDV=tong_tien_dv,
 #         TongTienThuoc=tong_tien_thuoc,
 #         VAT=vat,
-#         PTTT=pttt,  # Phương thức thanh toán (Tiền mặt/Chuyển khoản)
+#         PTTT=pttt,
 #         TrangThai="DaThanhToan",
 #         MaNhanVien = ma_nhan_vien
 #     )
@@ -442,8 +431,6 @@ def complete_payment(obj):
 #quan lý ---------------------------------------------
 
 def get_revenue_by_month(year):
-    # Truy vấn: Nhóm theo tháng, tính tổng (Tiền Dịch vụ + Tiền Thuốc + VAT)
-    # Lưu ý: VAT trong model bạn để là số tiền, nên cộng trực tiếp
     result = db.session.query(
         func.extract('month', HoaDon.NgayLap),
         func.sum(HoaDon.TongTienDV + HoaDon.TongTienThuoc + HoaDon.VAT)
@@ -460,8 +447,6 @@ def get_revenue_by_month(year):
 
 
 def get_revenue_by_dentist(month, year):
-    # Truy vấn: Join Hóa Đơn -> Phiếu Điều Trị -> Nha Sĩ
-    # Nhóm theo Tên Nha Sĩ, tính tổng doanh thu
 
     query = db.session.query(
         NhaSi.HoTen,

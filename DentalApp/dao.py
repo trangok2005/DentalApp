@@ -321,22 +321,22 @@ def load_invoice(ma_lh: int):
 
 #
 # def get_dental_bill_details(ma_pdt):
-#     # 1. Lấy phiếu điều trị
+#     # Lấy phiếu điều trị
 #     pdt = PhieuDieuTri.query.get(ma_pdt)
 #
 #     if not pdt:
 #         return None
 #
-#     # 2. Lấy tên bệnh nhân (BenhNhan kế thừa NguoiDung nên có HoTen)
+#     #  Lấy tên bệnh nhân (BenhNhan kế thừa NguoiDung nên có HoTen)
 #     ten_benh_nhan = pdt.benhnhan.HoTen if pdt.benhnhan else "Khách vãng lai"
 #
-#     # 3. Tính tiền dịch vụ
+#     # Tính tiền dịch vụ
 #     # pdt.dichvus là relationship Many-to-Many đã định nghĩa trong models
 #     tong_tien_dv = 0
 #     for dv in pdt.dichvus:
 #         tong_tien_dv += float(dv.DonGia)  # Convert Decimal sang float
 #
-#     # 4. Tính tiền thuốc
+#     # Tính tiền thuốc
 #     tong_tien_thuoc = 0
 #     # Kiểm tra xem phiếu có đơn thuốc không (vì quan hệ 1-1 có thể null)
 #     if pdt.donthuoc:

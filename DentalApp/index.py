@@ -535,7 +535,7 @@ def dental_bill(ma_hd):
 
 
 @app.route('/api-pay', methods=["POST"])
-@login_required  # Bắt buộc đăng nhập mới được thanh toán
+@login_required
 def pay():
     #Lấy dữ liệu từ Form HTML gửi lên
     ma_hd = request.form.get('ma_hd')

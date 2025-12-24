@@ -537,7 +537,7 @@ def dental_bill(ma_hd):
 @app.route('/api-pay', methods=["POST"])
 @login_required  # Bắt buộc đăng nhập mới được thanh toán
 def pay():
-    # 1. Lấy dữ liệu từ Form HTML gửi lên
+    #Lấy dữ liệu từ Form HTML gửi lên
     ma_hd = request.form.get('ma_hd')
     pttt = request.form.get('payment_method')
     ma_lh = request.form.get('ma_lh')
@@ -547,7 +547,7 @@ def pay():
         flash('Lỗi: Thiếu thông tin thanh toán.', 'danger')
         return redirect(url_for('reception_dashboard'))
 
-    # 2. taoj obj data
+    # taoj obj data
     payment_info = {
         'MaHD': ma_hd,
         'PTTT': pttt,

@@ -114,7 +114,7 @@ class LichHen(db.Model):
     __tablename__ = 'lichhen'
     MaLH = Column(Integer, primary_key=True, autoincrement=True)
     NgayKham = Column(Date, nullable=False)
-    GioKham = Column(Time, nullable=False)  # Dùng kiểu Time thay vì Integer
+    GioKham = Column(Time, nullable=False)
     TrangThai = Column(Enum(TrangThaiLichHen), default=TrangThaiLichHen.CHO_KHAM)  # Mặc định trạng thái
     GhiChu = Column(Text)
 

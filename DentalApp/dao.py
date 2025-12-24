@@ -406,32 +406,31 @@ def load_invoice(ma_lh: int):
 
 
 def complete_payment(obj):
-    # 1. Tìm hóa đơn
+    # Tìm hóa đơn
     hd = HoaDon.query.get(obj['MaHD'])
 
-    # 2. Kiểm tra tồn tại
+    # Kiểm tra tồn tại
     if not hd:
         print(f"Lỗi: Không tìm thấy hóa đơn có ID {obj['MaHD']}")
         return False
 
-    # 3. (Tùy chọn) Kiểm tra xem đã thanh toán chưa để tránh trùng lặp
-    # Giả sử enum TrangThaiThanhToan.Da_Thanh_Toan so sánh được
+
+    # ktra
     if hd.TrangThai == 'Da_Thanh_Toan':
         print("Lỗi: Hóa đơn này đã được thanh toán trước đó.")
         return False
 
     try:
-        # 4. Cập nhật thông tin
+        # Cập nhật thông tin
         hd.PTTT = obj['PTTT']
         hd.MaNhanVien = obj['MaNhanVien']
 
         # Cập nhật trạng thái
         hd.TrangThai = TrangThaiThanhToan.Da_Thanh_Toan
 
-        # QUAN TRỌNG: Cập nhật ngày giờ thanh toán thực tế
+        #Cập nhật ngày giờ thanh toán thực tế
         hd.NgayThanhToan = datetime.now()
 
-        # 6. Lưu vào DB
         db.session.commit()
         return True
 

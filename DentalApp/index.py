@@ -523,16 +523,12 @@ def get_invoices_api():
 
 @app.route('/dental-bill/<int:ma_hd>')
 def dental_bill(ma_hd):
-    # 1. Truy vấn trực tiếp Hóa Đơn theo ID
+    # Truy vấn trực tiếp Hóa Đơn theo ID
     invoice = HoaDon.query.get(ma_hd)
 
     if not invoice:
         flash('Không tìm thấy hóa đơn này.', 'danger')
         return redirect(url_for('reception_dashboard'))
-
-    # # 2. Kiểm tra nếu đã thanh toán rồi thì cảnh báo (tùy chọn)
-    # if invoice.TrangThaiThanhToan = TrangThaiThanhToan.  # Hoặc check theo Enum của bạn
-    #     flash('Hóa đơn này đã được thanh toán.', 'warning')
 
     return render_template('dental-bill.html', invoice=invoice)
 
@@ -540,7 +536,7 @@ def dental_bill(ma_hd):
 @app.route('/api-pay', methods=["POST"])
 @login_required  # Bắt buộc đăng nhập mới được thanh toán
 def pay():
-    # 1. Lấy dữ liệu từ Form HTML gửi lên
+    #Lấy dữ liệu từ Form HTML gửi lên
     ma_hd = request.form.get('ma_hd')
     pttt = request.form.get('payment_method')
     ma_lh = request.form.get('ma_lh')
@@ -550,7 +546,7 @@ def pay():
         flash('Lỗi: Thiếu thông tin thanh toán.', 'danger')
         return redirect(url_for('reception_dashboard'))
 
-    # 2. Tạo object dữ liệu
+    # Tạo object dữ liệu
     payment_info = {
         'MaHD': ma_hd,
         'PTTT': pttt,
@@ -558,7 +554,7 @@ def pay():
     }
 
     try:
-        # 3. Gọi DAO để xử lý database
+        #  Gọi DAO để xử lý database
         is_success = dao.complete_payment(payment_info)
 
         if is_success:
@@ -572,7 +568,7 @@ def pay():
         print(f"Lỗi thanh toán: {e}")
         flash('Lỗi hệ thống khi xử lý thanh toán.', 'danger')
 
-    # 4. Quay về Dashboard
+    #Quay về Dashboard
     return redirect(url_for('reception_dashboard'))
 
 

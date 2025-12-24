@@ -3,8 +3,6 @@ tooltipTriggerList.forEach(item => {
     new bootstrap.Tooltip(item)
 })
 
-// Đảm bảo thư viện SweetAlert2 đã được tải (Sử dụng Swal)
-
 /**
  * Hàm hiển thị thông báo SweetAlert2 đơn giản và đẹp.
  * @param {string} title - Tiêu đề của hộp thoại.
@@ -44,7 +42,7 @@ export function showSimpleAlert({ title, text, icon, isConfirm = false }) {
 }
 
 
-// --- Hàm tiện ích cho các loại gọi nhanh ---
+// --- Hàm tiện ích  ---
 export const Alert = {
     /** Hiển thị thông báo thành công (có tự đóng) */
     success: (title, text) => showSimpleAlert({ title, text, icon: 'success' }),

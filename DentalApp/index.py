@@ -523,12 +523,13 @@ def get_invoices_api():
 
 @app.route('/dental-bill/<int:ma_hd>')
 def dental_bill(ma_hd):
-    # Truy vấn trực tiếp Hóa Đơn theo ID
     invoice = HoaDon.query.get(ma_hd)
 
     if not invoice:
         flash('Không tìm thấy hóa đơn này.', 'danger')
         return redirect(url_for('reception_dashboard'))
+
+    #     flash('Hóa đơn này đã được thanh toán.', 'warning')
 
     return render_template('dental-bill.html', invoice=invoice)
 
@@ -536,7 +537,7 @@ def dental_bill(ma_hd):
 @app.route('/api-pay', methods=["POST"])
 @login_required  # Bắt buộc đăng nhập mới được thanh toán
 def pay():
-    #Lấy dữ liệu từ Form HTML gửi lên
+    # 1. Lấy dữ liệu từ Form HTML gửi lên
     ma_hd = request.form.get('ma_hd')
     pttt = request.form.get('payment_method')
     ma_lh = request.form.get('ma_lh')
@@ -546,7 +547,7 @@ def pay():
         flash('Lỗi: Thiếu thông tin thanh toán.', 'danger')
         return redirect(url_for('reception_dashboard'))
 
-    # Tạo object dữ liệu
+    # 2. taoj obj data
     payment_info = {
         'MaHD': ma_hd,
         'PTTT': pttt,
@@ -554,14 +555,11 @@ def pay():
     }
 
     try:
-        #  Gọi DAO để xử lý database
         is_success = dao.complete_payment(payment_info)
 
         if is_success:
-            # Gửi thông báo thành công
             flash('Đã thanh toán hóa đơn thành công!', 'success')
         else:
-            # Gửi thông báo thất bại
             flash('Thanh toán thất bại! Hóa đơn có thể đã đóng hoặc lỗi hệ thống.', 'danger')
 
     except Exception as e:
@@ -576,7 +574,6 @@ def pay():
 # @app.route("/report-stats")
 # @login_required
 # def report_stats():
-#     # Bảo vệ: Chỉ Quản lý mới được vào
 #     # if current_user.VaiTro != UserRole.QuanLy or \
 #     #         (isinstance(current_user, NhanVien) and current_user.BoPhan != UserRole.QuanLy):
 #     if current_user.VaiTro != UserRole.QuanLy:
@@ -592,7 +589,7 @@ def api_revenue_stats():
     data = request.json
     criteria = data.get('criteria')  # 'month' hoặc 'dentist'
     year = data.get('year', datetime.now().year)
-    month = data.get('month')  # Có thể null
+    month = data.get('month')  #nullable
 
     chart_data = {
         'labels': [],
@@ -644,7 +641,7 @@ admin.add_view(HoaDonModelView(HoaDon, db.session, name="Hóa Đơn", category="
 
 # admin.add_view(AnalyticsView(name='Báo cáo Doanh thu', endpoint='stats'))
 
-# 3. Thêm nút Đăng xuất
+#Đăng xuất
 admin.add_view(LogoutView(name='Đăng xuất'))
 
 if __name__ == "__main__":

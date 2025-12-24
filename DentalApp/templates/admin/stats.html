@@ -52,7 +52,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // 1. Xử lý ẩn hiện ô chọn tháng
+    //Xử lý ẩn hiện ô chọn tháng
     document.getElementById('criteriaSelect').addEventListener('change', function() {
         const type = this.value;
         const monthGroup = document.getElementById('monthFilterGroup');
@@ -68,7 +68,6 @@
         const month = document.getElementById('monthInput').value;
 
         try {
-            // Gọi API cũ của chúng ta
             const res = await fetch('/api/revenue-stats', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

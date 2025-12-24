@@ -140,13 +140,14 @@ class LichHenModelView(AuthenticatedModelView):
 
 # HÓA ĐƠN
 class HoaDonModelView(AuthenticatedModelView):
-    column_list = ['MaHD', 'benhnhan', 'NgayLap', 'TongTienDV', 'TongTienThuoc', 'VAT', 'PTTT', 'TrangThai']
+    column_list = ['MaHD', 'benhnhan', 'nhanvien', 'NgayLap', 'TongTienDV', 'TongTienThuoc', 'VAT', 'PTTT', 'TrangThai']
     column_filters = ['NgayLap', 'PTTT', 'TrangThai', 'benhnhan.HoTen']
     column_searchable_list = ['benhnhan.HoTen']
 
     column_labels = {
         'MaHD': 'Số HĐ',
         'benhnhan': 'Khách Hàng',
+        'nhanvien': 'Nhân viên thanh toán',
         'NgayLap': 'Ngày Lập',
         'TongTienDV': 'Tiền Dịch Vụ',
         'TongTienThuoc': 'Tiền Thuốc',

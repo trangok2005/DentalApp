@@ -435,7 +435,6 @@ def complete_payment(obj):
         return True
 
     except Exception as ex:
-        # 6. Xử lý lỗi
         db.session.rollback()
         print(f"Lỗi hệ thống khi thanh toán: {ex}")
         return False

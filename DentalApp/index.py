@@ -110,7 +110,7 @@ def logout_my_user():
 @login_required
 @booking_required
 def booking():
-    # STT 1: Load_Form - Tải danh sách Nha sĩ, Dịch vụ, Ngày hiện tại
+   #Tải danh sách Nha sĩ, Dịch vụ, Ngày hiện tại
     today = datetime.now().strftime('%Y-%m-%d')
     DENTISTS = dao.get_dentist_list()
     return render_template("booking.html", dentists=DENTISTS, today=today)

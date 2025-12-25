@@ -1,7 +1,7 @@
 // ---XỬ LÝ MODAL HỦY LỊCH HẸN ---
 document.addEventListener('DOMContentLoaded', function() {
 
-    // HTML theo ID
+    // ten benh nhan va ID lich hen
     const modalPatientName = document.getElementById('modalPatientName');
     const modalApptId = document.getElementById('modalApptId');
 
@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- XỬ LÝ TAB VÀ LOAD HÓA ĐƠN ---
 document.addEventListener('DOMContentLoaded', function() {
 
+    //tab pay va tab lich hen
     const paymentTabBtn = document.getElementById('payment-tab');
     const appointmentTabBtn = document.getElementById('appointment-tab');
     const invoiceTableBody = document.getElementById('invoice-table-body');
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Key để lưu vào bộ nhớ trình duyệt
     const STORAGE_KEY = 'active_dashboard_tab';
 
-    // GHI NHỚ TAB
+    // ghi nhớ tab khi ng dùng đổi tab
     const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
     tabEls.forEach(tabEl => {
         tabEl.addEventListener('shown.bs.tab', function (event) {
@@ -71,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // \Hàm gọi API (Đã sửa lỗi thiếu ngoặc)
+    // Hàm gọi API
     async function loadInvoices() {
         const tbody = document.getElementById('invoice-table-body');
         if (!tbody) return; // Kiểm tra null cho an toàn
@@ -102,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Sự kiện submit form lọc (để reset biến isInvoiceLoaded)
-        const filterForm = document.querySelector('form'); // Nên đặt ID cụ thể cho form nếu có nhiều form
+        const filterForm = document.querySelector('form');
         if(filterForm){
             filterForm.addEventListener('submit', function(){
                 isInvoiceLoaded = false;
